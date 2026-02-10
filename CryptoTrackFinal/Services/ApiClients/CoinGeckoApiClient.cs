@@ -7,8 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using CryptoTrackClient.Models;
-using CryptoTrackClient.Services.Interfaces;
+
 
 namespace CryptoTrackClient.Services.ApiClients
 {

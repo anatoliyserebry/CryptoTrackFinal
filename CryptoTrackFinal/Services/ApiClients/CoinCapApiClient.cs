@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace CryptoTrackClient.Services.ApiClients
 {
     public class CoinCapApiClient : BaseApiClient
