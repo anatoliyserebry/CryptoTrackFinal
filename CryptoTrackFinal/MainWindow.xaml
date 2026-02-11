@@ -4,9 +4,23 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CryptoTrackFinal"
+        xmlns:vm="clr-namespace:CryptoTrackClient.ViewModels"
+        xmlns:views="clr-namespace:CryptoTrackClient.Views"
+        xmlns:converters="clr-namespace:CryptoTrackClient.Converters"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="CryptoTrackClient - Crypto Portfolio Tracker" 
+        Height="800" 
+        Width="1200"
+        MinHeight="600"
+        MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
 
+    <Grid>
+        
     </Grid>
-</Window>
+    </Window>
+        
+
+
+      

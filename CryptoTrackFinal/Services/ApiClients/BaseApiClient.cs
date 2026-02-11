@@ -7,6 +7,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Polly;
+using Polly.Retry;
 
 namespace CryptoTrackClient.Services.ApiClients
 {
