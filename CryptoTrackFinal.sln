@@ -1,11 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoTrackClient", "CryptoTrackFinal\CryptoTrackClient.csproj", "{7D4862EF-689A-4FA1-8458-769AB91EBC7D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoTrackClient", "CryptoTrackFinal\CryptoTrackClient.csproj", "{7D4862EF-689A-4FA1-8458-769AB91EBC7D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoTrackFinal", "CryptoTrackClient\CryptoTrackFinal.csproj", "{079206B9-7B54-4AD0-87DA-9984E72FC0DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoTrackFinal", "CryptoTrackClient\CryptoTrackFinal.csproj", "{079206B9-7B54-4AD0-87DA-9984E72FC0DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{5716B979-A6CF-40F3-832E-5435618312B3}"
+	ProjectSection(SolutionItems) = preProject
+		appsettings.json = appsettings.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
