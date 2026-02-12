@@ -203,39 +203,50 @@ namespace CryptoTrackClient.Services
 
         private async Task LoadFiatCurrenciesAsync()
         {
+            var loadedFromApi = false;
+
             try
             {
                 if (_activeApiClient.SupportsFiatCurrencies)
                 {
                     var currencies = await _activeApiClient.GetFiatCurrenciesAsync();
-                    foreach (var currency in currencies)
-                    {
-                        _fiatCurrencyCache[currency.Code] = currency;
-                    }
-                }
-                else
-                {
-                    // Use fixed list
-                    var fixedCurrencies = new List<FiatCurrency>
-                    {
-                        new() { Code = "USD", Name = "US Dollar", Symbol = "$", RateToUSD = 1m },
-                        new() { Code = "EUR", Name = "Euro", Symbol = "€", RateToUSD = 0.85m },
-                        new() { Code = "GBP", Name = "British Pound", Symbol = "£", RateToUSD = 0.73m },
-                        new() { Code = "RUB", Name = "Russian Ruble", Symbol = "₽", RateToUSD = 0.011m },
-                        new() { Code = "CNY", Name = "Chinese Yuan", Symbol = "¥", RateToUSD = 0.14m }
-                    };
 
-                    foreach (var currency in fixedCurrencies)
+                    if (currencies != null && currencies.Count > 0)
                     {
-                        _fiatCurrencyCache[currency.Code] = currency;
+                        foreach (var currency in currencies)
+                        {
+                            _fiatCurrencyCache[currency.Code] = currency;
+                        }
+
+                        loadedFromApi = true;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load fiat currencies");
+                _logger.LogError(ex, "Failed to load fiat currencies from API");
+            }
+
+            if (!loadedFromApi && _fiatCurrencyCache.IsEmpty)
+            {
+                foreach (var currency in GetDefaultFiatCurrencies())
+                {
+                    _fiatCurrencyCache[currency.Code] = currency;
+                }
+
+                _logger.LogWarning("Using fallback fiat currencies list.");
             }
         }
+
+        private static List<FiatCurrency> GetDefaultFiatCurrencies() =>
+            new()
+            {
+                new() { Code = "USD", Name = "US Dollar", Symbol = "$", RateToUSD = 1m },
+                new() { Code = "EUR", Name = "Euro", Symbol = "€", RateToUSD = 0.85m },
+                new() { Code = "GBP", Name = "British Pound", Symbol = "£", RateToUSD = 0.73m },
+                new() { Code = "RUB", Name = "Russian Ruble", Symbol = "₽", RateToUSD = 0.011m },
+                new() { Code = "CNY", Name = "Chinese Yuan", Symbol = "¥", RateToUSD = 0.14m }
+            };
 
         // ========== CRYPTOCURRENCY METHODS ==========
 
