@@ -1,14 +1,11 @@
 ﻿using CryptoTrackClient.Models;
 using CryptoTrackClient.Services.Interfaces;
-using System;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using Polly;
 using Polly.Retry;
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CryptoTrackClient.Services.ApiClients
 {
@@ -33,7 +30,11 @@ namespace CryptoTrackClient.Services.ApiClients
 
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "CryptoTrackClient/2.0");
 
-            
+            // 🔧 CORRECTION : garantir que maxCount est au moins 1
+            int permitsPerSecond = Math.Max(1, RequestLimitPerMinute / 60);
+            _rateLimiter = new SemaphoreSlim(permitsPerSecond, permitsPerSecond);
+
+            // Politique de réessai (identique)
             _retryPolicy = Policy
                 .Handle<HttpRequestException>()
                 .Or<TaskCanceledException>()
@@ -42,11 +43,8 @@ namespace CryptoTrackClient.Services.ApiClients
                     sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                     onRetry: (exception, timeSpan, retryCount, context) =>
                     {
-                        Console.WriteLine($"Retry {retryCount} for {ApiName}: {exception.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Retry {retryCount} for {ApiName}: {exception.Message}");
                     });
-
-            
-            _rateLimiter = new SemaphoreSlim(RequestLimitPerMinute / 60, RequestLimitPerMinute / 60);
         }
 
         protected async Task<T> ExecuteWithRetryAndRateLimitAsync<T>(Func<Task<T>> action)
@@ -61,8 +59,9 @@ namespace CryptoTrackClient.Services.ApiClients
             }
             finally
             {
-                // Release after delay to respect rate limit
-                _ = Task.Delay(60000 / RequestLimitPerMinute).ContinueWith(_ => _rateLimiter.Release());
+                // 🔧 CORRECTION : délai minimum de 1 ms
+                int delayMs = Math.Max(1, 60000 / RequestLimitPerMinute);
+                _ = Task.Delay(delayMs).ContinueWith(_ => _rateLimiter.Release());
             }
         }
 
