@@ -80,34 +80,40 @@ namespace CryptoTrackClient.Services
 
         private async Task InitializeApiAsync()
         {
-            _logger.LogInformation("Testing API connections...");
+            _logger.LogInformation("Initializing market data providers...");
 
             foreach (var client in _apiClients)
             {
                 try
                 {
-                    if (await client.TestConnectionAsync())
+                    var data = await client.GetTopCryptocurrenciesAsync(100);
+                    if (data != null && data.Count > 0)
                     {
                         _activeApiClient = client;
+                        foreach (var currency in data)
+                        {
+                            _cachedCurrencies.AddOrUpdate(
+                                currency.Id,
+                                currency,
+                                (_, _) => currency);
+                        }
+
                         _logger.LogInformation("Using {ApiName} API", client.ApiName);
-                        break;
+                        DataUpdated?.Invoke();
+                        await LoadFiatCurrenciesAsync();
+                        return;
                     }
+
+                    _logger.LogWarning("{ApiName} returned no market data during startup", client.ApiName);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to connect to {ApiName}", client.ApiName);
+                    _logger.LogWarning(ex, "Failed to load startup market data from {ApiName}", client.ApiName);
                 }
             }
 
-            if (_activeApiClient == null)
-            {
-                _logger.LogError("All APIs failed to connect");
-                LoadFallbackData();
-                return;
-            }
-
-            await LoadDataAsync();
-            await LoadFiatCurrenciesAsync();
+            _logger.LogError("All APIs failed to provide startup market data");
+            LoadFallbackData();
         }
 
         private async Task EnsureInitializedAsync()
