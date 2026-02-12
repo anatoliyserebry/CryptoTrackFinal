@@ -16,6 +16,8 @@ namespace CryptoTrackClient.ViewModels
     {
         private readonly ICryptoService _cryptoService;
         private System.Timers.Timer? _autoRefreshTimer;
+        private readonly List<CryptoCurrency> _allCurrencies = new();
+        private bool _showOnlyFavorites;
 
         [ObservableProperty]
         private ObservableCollection<CryptoCurrency> _cryptocurrencies = new();
@@ -28,6 +30,9 @@ namespace CryptoTrackClient.ViewModels
 
         [ObservableProperty]
         private bool _isLoading;
+
+        [ObservableProperty]
+        private string _statusMessage = "Ready";
 
         [ObservableProperty]
         private string _searchText = string.Empty;
@@ -71,8 +76,26 @@ namespace CryptoTrackClient.ViewModels
         [ObservableProperty]
         private int _selectedChartDays = 7;
 
+        [ObservableProperty]
+        private ObservableCollection<FiatCurrency> _fiatCurrencies = new();
+
+        [ObservableProperty]
+        private FiatCurrency? _selectedFromCurrency;
+
+        [ObservableProperty]
+        private FiatCurrency? _selectedToCurrency;
+
+        [ObservableProperty]
+        private decimal _amountToConvert = 100m;
+
+        [ObservableProperty]
+        private decimal _convertedAmount;
+
+        [ObservableProperty]
+        private decimal _exchangeRate = 1m;
+
         public ObservableCollection<CryptoCurrency> FilteredCurrencies =>
-            new ObservableCollection<CryptoCurrency>(Cryptocurrencies
+            new ObservableCollection<CryptoCurrency>((_showOnlyFavorites ? Favorites : Cryptocurrencies)
                 .Where(c => string.IsNullOrEmpty(SearchText) ||
                            c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                            c.Symbol.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
@@ -91,6 +114,8 @@ namespace CryptoTrackClient.ViewModels
         public ICommand ShowPortfolioCommand { get; }
         public ICommand ShowConverterCommand { get; }
         public ICommand ShowMarketCommand { get; }
+        public ICommand ConvertCurrencyCommand { get; }
+        public ICommand SwapCurrencyCommand { get; }
 
         public MainViewModel(ICryptoService cryptoService)
         {
@@ -110,9 +135,12 @@ namespace CryptoTrackClient.ViewModels
             ShowPortfolioCommand = new RelayCommand(() => ShowPortfolioSection());
             ShowConverterCommand = new RelayCommand(() => ShowConverterSection());
             ShowMarketCommand = new RelayCommand(() => ShowMarketSection());
+            ConvertCurrencyCommand = new AsyncRelayCommand(ConvertCurrencyAsync);
+            SwapCurrencyCommand = new AsyncRelayCommand(SwapCurrenciesAsync);
 
             SetupAutoRefresh();
             _ = LoadDataAsync();
+            _ = LoadFiatCurrenciesAsync();
 
             // Subscribe to events
             _cryptoService.DataUpdated += async () => await OnDataUpdated();
@@ -128,10 +156,18 @@ namespace CryptoTrackClient.ViewModels
             try
             {
                 var data = await _cryptoService.GetCryptoCurrenciesAsync();
+                _allCurrencies.Clear();
+                _allCurrencies.AddRange(data);
                 Cryptocurrencies = new ObservableCollection<CryptoCurrency>(data);
 
                 var favorites = await _cryptoService.GetFavoriteCurrenciesAsync();
                 Favorites = new ObservableCollection<CryptoCurrency>(favorites);
+                StatusMessage = $"Loaded {Cryptocurrencies.Count} assets ({DateTime.Now:T})";
+                OnPropertyChanged(nameof(FilteredCurrencies));
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to load market data: {ex.Message}";
             }
             finally
             {
@@ -142,6 +178,7 @@ namespace CryptoTrackClient.ViewModels
         private async Task RefreshDataAsync()
         {
             await _cryptoService.RefreshDataAsync();
+            StatusMessage = $"Data refreshed at {DateTime.Now:T}";
         }
 
         private async Task ToggleFavoriteAsync(string cryptoId)
@@ -167,13 +204,16 @@ namespace CryptoTrackClient.ViewModels
         private void ShowFavorites()
         {
             SearchText = string.Empty;
-            Cryptocurrencies = new ObservableCollection<CryptoCurrency>(Favorites);
+            _showOnlyFavorites = true;
+            OnPropertyChanged(nameof(FilteredCurrencies));
         }
 
         private void ShowAll()
         {
             SearchText = string.Empty;
-            _ = LoadDataAsync();
+            _showOnlyFavorites = false;
+            Cryptocurrencies = new ObservableCollection<CryptoCurrency>(_allCurrencies);
+            OnPropertyChanged(nameof(FilteredCurrencies));
         }
 
         private void ToggleAutoRefresh()
@@ -272,6 +312,54 @@ namespace CryptoTrackClient.ViewModels
             ActiveApi = _cryptoService.ActiveApiName;
             AvailableApis = new ObservableCollection<string>(_cryptoService.AvailableApis);
         }
+
+        partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredCurrencies));
+        partial void OnCryptocurrenciesChanged(ObservableCollection<CryptoCurrency> value) => OnPropertyChanged(nameof(FilteredCurrencies));
+        partial void OnFavoritesChanged(ObservableCollection<CryptoCurrency> value) => OnPropertyChanged(nameof(FilteredCurrencies));
+
+        private async Task LoadFiatCurrenciesAsync()
+        {
+            try
+            {
+                var currencies = await _cryptoService.GetFiatCurrenciesAsync();
+                FiatCurrencies = new ObservableCollection<FiatCurrency>(currencies.OrderBy(c => c.Code));
+
+                SelectedFromCurrency = FiatCurrencies.FirstOrDefault(f => f.Code == "USD") ?? FiatCurrencies.FirstOrDefault();
+                SelectedToCurrency = FiatCurrencies.FirstOrDefault(f => f.Code == "EUR") ?? FiatCurrencies.Skip(1).FirstOrDefault();
+
+                await ConvertCurrencyAsync();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to load fiat currencies: {ex.Message}";
+            }
+        }
+
+        private async Task ConvertCurrencyAsync()
+        {
+            if (SelectedFromCurrency == null || SelectedToCurrency == null || AmountToConvert <= 0)
+            {
+                ConvertedAmount = 0;
+                return;
+            }
+
+            ExchangeRate = await _cryptoService.ConvertCurrencyAsync(1m, SelectedFromCurrency.Code, SelectedToCurrency.Code);
+            ConvertedAmount = await _cryptoService.ConvertCurrencyAsync(AmountToConvert, SelectedFromCurrency.Code, SelectedToCurrency.Code);
+        }
+
+        private async Task SwapCurrenciesAsync()
+        {
+            if (SelectedFromCurrency == null || SelectedToCurrency == null) return;
+
+            var temp = SelectedFromCurrency;
+            SelectedFromCurrency = SelectedToCurrency;
+            SelectedToCurrency = temp;
+            await ConvertCurrencyAsync();
+        }
+
+        partial void OnSelectedFromCurrencyChanged(FiatCurrency? value) => _ = ConvertCurrencyAsync();
+        partial void OnSelectedToCurrencyChanged(FiatCurrency? value) => _ = ConvertCurrencyAsync();
+        partial void OnAmountToConvertChanged(decimal value) => _ = ConvertCurrencyAsync();
 
         private void SetupAutoRefresh()
         {

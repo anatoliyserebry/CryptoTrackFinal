@@ -207,11 +207,85 @@
             </Border>
 
             <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}" Margin="20" Background="White" CornerRadius="5" Padding="20">
-                <TextBlock Text="Portfolio view in progress" Foreground="#7F8C8D" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Portfolio Overview" Style="{StaticResource TitleTextStyle}"/>
+
+                    <UniformGrid Grid.Row="1" Columns="3" Margin="0,0,0,15">
+                        <Border Background="#ECF7FF" CornerRadius="5" Padding="12" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="Total Value" Foreground="#5D6D7E" FontSize="12"/>
+                                <TextBlock Text="{Binding PortfolioValue, StringFormat={}{0:C2}}" FontSize="20" FontWeight="Bold" Foreground="#2C3E50"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#F0FFF4" CornerRadius="5" Padding="12" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="Profit / Loss" Foreground="#5D6D7E" FontSize="12"/>
+                                <TextBlock FontSize="20" FontWeight="Bold" Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}">
+                                    <Run Text="{Binding PortfolioProfitLoss, StringFormat={}{0:C2}}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#F6F9FC" CornerRadius="5" Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="Change %" Foreground="#5D6D7E" FontSize="12"/>
+                                <TextBlock FontSize="20" FontWeight="Bold" Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}">
+                                    <Run Text="{Binding PortfolioProfitLossPercentage, StringFormat={}{0:F2}%}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Grid.Row="2" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="14">
+                        <TextBlock Text="Track buy/sell transactions from the Portfolio tool and this summary will update automatically."
+                                   Foreground="#7F8C8D" TextWrapping="Wrap"/>
+                    </Border>
+                </Grid>
             </Border>
 
             <Border Visibility="{Binding ShowConverter, Converter={StaticResource BoolToVisibilityConverter}}" Margin="20" Background="White" CornerRadius="5" Padding="20">
-                <TextBlock Text="Currency converter view in progress" Foreground="#7F8C8D" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Currency Converter" Style="{StaticResource TitleTextStyle}"/>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0" Text="{Binding AmountToConvert, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedFromCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
+                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
+                        <ComboBox Grid.Column="3" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedToCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}"/>
+                    </Grid>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Convert" Command="{Binding ConvertCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,12,0"/>
+                        <TextBlock VerticalAlignment="Center" Foreground="#5D6D7E">
+                            <Run Text="Rate: 1 "/><Run Text="{Binding SelectedFromCurrency.Code}"/><Run Text=" = "/><Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <Border Grid.Row="3" Margin="0,15,0,0" Background="#F8FAFC" CornerRadius="5" Padding="16">
+                        <TextBlock FontSize="26" FontWeight="Bold" Foreground="#2C3E50">
+                            <Run Text="{Binding ConvertedAmount, StringFormat={}{0:N4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
+                        </TextBlock>
+                    </Border>
+                </Grid>
             </Border>
 
             <Border Visibility="{Binding ShowChart, Converter={StaticResource BoolToVisibilityConverter}}" Background="White" CornerRadius="5" Margin="20" Padding="20">
@@ -238,8 +312,14 @@
                         </Grid>
                     </Border>
 
-                    <Border Grid.Row="1" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="20">
-                        <TextBlock Text="Price chart would be displayed here" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#95A5A6" FontStyle="Italic"/>
+                    <Border Grid.Row="1" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="10">
+                        <DataGrid ItemsSource="{Binding PriceHistory}" Style="{StaticResource DataGridStyle}" AutoGenerateColumns="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*"/>
+                                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat={}{0:C4}}" Width="160"/>
+                                <DataGridTextColumn Header="Volume" Binding="{Binding Volume, StringFormat={}{0:N0}}" Width="200"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Border>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
@@ -258,7 +338,10 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="CryptoTrackClient v2.0 - Crypto Portfolio Tracker" Foreground="#BDC3C7" FontSize="12"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="CryptoTrackClient v2.0 - Crypto Portfolio Tracker" Foreground="#BDC3C7" FontSize="12" Margin="0,0,15,0"/>
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="#D6EAF8" FontSize="12"/>
+                </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <TextBlock Text="Auto-refresh: " Foreground="#BDC3C7" FontSize="12" Margin="0,0,5,0"/>

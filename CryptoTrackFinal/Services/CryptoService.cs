@@ -110,6 +110,13 @@ namespace CryptoTrackClient.Services
 
         private async Task LoadDataAsync()
         {
+            if (_activeApiClient == null)
+            {
+                _logger.LogWarning("No active API client available. Loading fallback data.");
+                LoadFallbackData();
+                return;
+            }
+
             try
             {
                 var data = await _activeApiClient.GetTopCryptocurrenciesAsync(100);
@@ -413,7 +420,14 @@ namespace CryptoTrackClient.Services
 
         public async Task<List<FiatCurrency>> GetFiatCurrenciesAsync()
         {
-            return _fiatCurrencyCache.Values.ToList();
+            if (_fiatCurrencyCache.IsEmpty)
+            {
+                await LoadFiatCurrenciesAsync();
+            }
+
+            return _fiatCurrencyCache.Values
+                .OrderBy(f => f.Code)
+                .ToList();
         }
 
         public async Task<decimal> ConvertCurrencyAsync(decimal amount, string fromCurrency, string toCurrency)
@@ -423,7 +437,7 @@ namespace CryptoTrackClient.Services
                 if (fromCurrency == toCurrency) return amount;
 
                 // Try active API
-                if (_activeApiClient.SupportsFiatCurrencies)
+                if (_activeApiClient != null && _activeApiClient.SupportsFiatCurrencies)
                 {
                     var rate = await _activeApiClient.GetExchangeRateAsync(fromCurrency, toCurrency);
                     return amount * rate;
@@ -685,6 +699,7 @@ namespace CryptoTrackClient.Services
             {
                 _activeApiClient = newClient;
                 await LoadDataAsync();
+                await LoadFiatCurrenciesAsync();
                 DataUpdated?.Invoke();
             }
         }
