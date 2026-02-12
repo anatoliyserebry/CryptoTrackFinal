@@ -25,6 +25,7 @@ namespace CryptoTrackClient.Services
         private readonly ConcurrentDictionary<string, CryptoCurrency> _cachedCurrencies;
         private readonly ConcurrentDictionary<string, PriceHistoryCache> _priceHistoryCache;
         private readonly ConcurrentDictionary<string, FiatCurrency> _fiatCurrencyCache;
+        private readonly ConcurrentDictionary<string, ExchangeRateCache> _exchangeRateCache;
         private readonly Random _random = new();
         private readonly Task _initializationTask;
         private readonly TimeSpan _initializationWaitTimeout = TimeSpan.FromSeconds(8);
@@ -51,6 +52,7 @@ namespace CryptoTrackClient.Services
             _cachedCurrencies = new ConcurrentDictionary<string, CryptoCurrency>();
             _priceHistoryCache = new ConcurrentDictionary<string, PriceHistoryCache>();
             _fiatCurrencyCache = new ConcurrentDictionary<string, FiatCurrency>();
+            _exchangeRateCache = new ConcurrentDictionary<string, ExchangeRateCache>();
 
             _portfolioFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -406,33 +408,70 @@ namespace CryptoTrackClient.Services
             {
                 await EnsureInitializedAsync();
 
-                if (fromCurrency == toCurrency) return amount;
+                if (string.IsNullOrWhiteSpace(fromCurrency) || string.IsNullOrWhiteSpace(toCurrency))
+                {
+                    return amount;
+                }
+
+                var normalizedFromCurrency = fromCurrency.ToUpperInvariant();
+                var normalizedToCurrency = toCurrency.ToUpperInvariant();
+
+                if (normalizedFromCurrency == normalizedToCurrency) return amount;
+
+                var cacheKey = $"{normalizedFromCurrency}_{normalizedToCurrency}";
+
+                if (_exchangeRateCache.TryGetValue(cacheKey, out var exchangeRateCache) &&
+                    exchangeRateCache.ExpiryTime > DateTime.UtcNow)
+                {
+                    return amount * exchangeRateCache.Rate;
+                }
+
+                decimal rate;
 
                 // Try active API
                 if (_activeApiClient != null && _activeApiClient.SupportsFiatCurrencies)
                 {
-                    var rate = await _activeApiClient.GetExchangeRateAsync(fromCurrency, toCurrency);
-                    return amount * rate;
+                    rate = await _activeApiClient.GetExchangeRateAsync(normalizedFromCurrency, normalizedToCurrency);
+                    if (rate <= 0)
+                    {
+                        rate = GetCachedFiatRate(normalizedFromCurrency, normalizedToCurrency);
+                    }
                 }
-
-                // Use cached rates
-                var fromFiat = _fiatCurrencyCache.Values.FirstOrDefault(f => f.Code == fromCurrency.ToUpper());
-                var toFiat = _fiatCurrencyCache.Values.FirstOrDefault(f => f.Code == toCurrency.ToUpper());
-
-                if (fromFiat != null && toFiat != null)
+                else
                 {
-                    // Convert via USD
-                    var amountInUsd = fromFiat.ConvertToUSD(amount);
-                    return toFiat.ConvertFromUSD(amountInUsd);
+                    rate = GetCachedFiatRate(normalizedFromCurrency, normalizedToCurrency);
                 }
 
-                return amount;
+                _exchangeRateCache[cacheKey] = new ExchangeRateCache
+                {
+                    Rate = rate,
+                    ExpiryTime = DateTime.UtcNow.AddMinutes(2)
+                };
+
+                return amount * rate;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to convert currency");
-                return amount;
+                return amount * GetCachedFiatRate(fromCurrency, toCurrency);
             }
+        }
+
+        private decimal GetCachedFiatRate(string fromCurrency, string toCurrency)
+        {
+            var normalizedFromCurrency = fromCurrency.ToUpperInvariant();
+            var normalizedToCurrency = toCurrency.ToUpperInvariant();
+
+            var fromFiat = _fiatCurrencyCache.Values.FirstOrDefault(f => f.Code == normalizedFromCurrency);
+            var toFiat = _fiatCurrencyCache.Values.FirstOrDefault(f => f.Code == normalizedToCurrency);
+
+            if (fromFiat != null && toFiat != null)
+            {
+                var amountInUsd = fromFiat.ConvertToUSD(1m);
+                return toFiat.ConvertFromUSD(amountInUsd);
+            }
+
+            return 1m;
         }
 
         // ========== PORTFOLIO METHODS ==========
@@ -691,6 +730,12 @@ namespace CryptoTrackClient.Services
         private class PriceHistoryCache
         {
             public List<PriceHistory> History { get; set; }
+            public DateTime ExpiryTime { get; set; }
+        }
+
+        private class ExchangeRateCache
+        {
+            public decimal Rate { get; set; }
             public DateTime ExpiryTime { get; set; }
         }
 

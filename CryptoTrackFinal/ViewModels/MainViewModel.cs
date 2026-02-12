@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -16,6 +17,7 @@ namespace CryptoTrackClient.ViewModels
     {
         private readonly ICryptoService _cryptoService;
         private System.Timers.Timer? _autoRefreshTimer;
+        private CancellationTokenSource? _conversionCts;
         private readonly List<CryptoCurrency> _allCurrencies = new();
         private bool _showOnlyFavorites;
 
@@ -435,11 +437,13 @@ namespace CryptoTrackClient.ViewModels
             if (SelectedFromCurrency == null || SelectedToCurrency == null || AmountToConvert <= 0)
             {
                 ConvertedAmount = 0;
+                ExchangeRate = 0;
                 return;
             }
 
-            ExchangeRate = await _cryptoService.ConvertCurrencyAsync(1m, SelectedFromCurrency.Code, SelectedToCurrency.Code);
-            ConvertedAmount = await _cryptoService.ConvertCurrencyAsync(AmountToConvert, SelectedFromCurrency.Code, SelectedToCurrency.Code);
+            var rate = await _cryptoService.ConvertCurrencyAsync(1m, SelectedFromCurrency.Code, SelectedToCurrency.Code);
+            ExchangeRate = rate;
+            ConvertedAmount = AmountToConvert * rate;
         }
 
         private async Task SwapCurrenciesAsync()
@@ -452,9 +456,9 @@ namespace CryptoTrackClient.ViewModels
             await ConvertCurrencyAsync();
         }
 
-        partial void OnSelectedFromCurrencyChanged(FiatCurrency? value) => _ = ConvertCurrencyAsync();
-        partial void OnSelectedToCurrencyChanged(FiatCurrency? value) => _ = ConvertCurrencyAsync();
-        partial void OnAmountToConvertChanged(decimal value) => _ = ConvertCurrencyAsync();
+        partial void OnSelectedFromCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+        partial void OnSelectedToCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+        partial void OnAmountToConvertChanged(decimal value) => QueueCurrencyConversion();
         partial void OnSelectedPortfolioCurrencyChanged(CryptoCurrency? value)
         {
             if (value != null)
@@ -473,7 +477,30 @@ namespace CryptoTrackClient.ViewModels
 
         public void Dispose()
         {
+            _conversionCts?.Cancel();
+            _conversionCts?.Dispose();
             _autoRefreshTimer?.Dispose();
+        }
+
+        private async void QueueCurrencyConversion()
+        {
+            _conversionCts?.Cancel();
+            _conversionCts?.Dispose();
+
+            _conversionCts = new CancellationTokenSource();
+            var token = _conversionCts.Token;
+
+            try
+            {
+                await Task.Delay(250, token);
+                if (token.IsCancellationRequested) return;
+
+                await ConvertCurrencyAsync();
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignore cancelled conversion requests.
+            }
         }
     }
 }
