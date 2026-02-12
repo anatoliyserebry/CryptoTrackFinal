@@ -113,7 +113,7 @@ namespace CryptoTrackClient.Services
             }
 
             _logger.LogError("All APIs failed to provide startup market data");
-            LoadFallbackData();
+            NotifyMarketDataUnavailable();
         }
 
         private async Task EnsureInitializedAsync()
@@ -134,21 +134,12 @@ namespace CryptoTrackClient.Services
                     return;
                 }
 
-                _logger.LogWarning("API initialization is still running after {TimeoutSeconds} seconds. Returning cached/fallback data.",
+                _logger.LogWarning("API initialization is still running after {TimeoutSeconds} seconds. Returning cached market data only.",
                     _initializationWaitTimeout.TotalSeconds);
-
-                if (_cachedCurrencies.IsEmpty)
-                {
-                    LoadFallbackData();
-                }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "API initialization failed, continuing with fallback data");
-                if (_cachedCurrencies.IsEmpty)
-                {
-                    LoadFallbackData();
-                }
+                _logger.LogWarning(ex, "API initialization failed, continuing with cached market data only");
             }
         }
 
@@ -156,8 +147,8 @@ namespace CryptoTrackClient.Services
         {
             if (_activeApiClient == null)
             {
-                _logger.LogWarning("No active API client available. Loading fallback data.");
-                LoadFallbackData();
+                _logger.LogWarning("No active API client available. Unable to load live market data.");
+                NotifyMarketDataUnavailable();
                 return;
             }
 
@@ -198,82 +189,13 @@ namespace CryptoTrackClient.Services
             }
             else
             {
-                _logger.LogWarning("All APIs failed, using fallback data");
-                LoadFallbackData();
+                _logger.LogWarning("All APIs failed, no live market data available");
+                NotifyMarketDataUnavailable();
             }
         }
 
-        private void LoadFallbackData()
+        private void NotifyMarketDataUnavailable()
         {
-            var fallbackData = new List<CryptoCurrency>
-            {
-                new() {
-                    Id = "bitcoin",
-                    Name = "Bitcoin",
-                    Symbol = "BTC",
-                    CurrentPrice = 45000,
-                    MarketCap = 880000000000,
-                    PriceChange24h = 500,
-                    PriceChangePercentage24h = 1.12m,
-                    LastUpdated = DateTime.Now,
-                    Volume24h = 25000000000,
-                    Rank = 1
-                },
-                new() {
-                    Id = "ethereum",
-                    Name = "Ethereum",
-                    Symbol = "ETH",
-                    CurrentPrice = 2500,
-                    MarketCap = 300000000000,
-                    PriceChange24h = -25,
-                    PriceChangePercentage24h = -0.99m,
-                    LastUpdated = DateTime.Now,
-                    Volume24h = 12000000000,
-                    Rank = 2
-                },
-                new() {
-                    Id = "binancecoin",
-                    Name = "Binance Coin",
-                    Symbol = "BNB",
-                    CurrentPrice = 320,
-                    MarketCap = 50000000000,
-                    PriceChange24h = 5,
-                    PriceChangePercentage24h = 1.56m,
-                    LastUpdated = DateTime.Now,
-                    Volume24h = 2000000000,
-                    Rank = 3
-                },
-                new() {
-                    Id = "ripple",
-                    Name = "Ripple",
-                    Symbol = "XRP",
-                    CurrentPrice = 0.75m,
-                    MarketCap = 40000000000,
-                    PriceChange24h = 0.01m,
-                    PriceChangePercentage24h = 1.35m,
-                    LastUpdated = DateTime.Now,
-                    Volume24h = 1500000000,
-                    Rank = 4
-                },
-                new() {
-                    Id = "cardano",
-                    Name = "Cardano",
-                    Symbol = "ADA",
-                    CurrentPrice = 0.45m,
-                    MarketCap = 16000000000,
-                    PriceChange24h = 0.02m,
-                    PriceChangePercentage24h = 4.65m,
-                    LastUpdated = DateTime.Now,
-                    Volume24h = 800000000,
-                    Rank = 5
-                },
-            };
-
-            foreach (var currency in fallbackData)
-            {
-                _cachedCurrencies[currency.Id] = currency;
-            }
-
             DataUpdated?.Invoke();
         }
 
