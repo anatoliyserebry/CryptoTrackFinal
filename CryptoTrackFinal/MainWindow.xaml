@@ -5,16 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:CryptoTrackClient.Converters"
         mc:Ignorable="d"
-        Title="CryptoTrackClient - Crypto Portfolio Tracker" 
-        Height="800" 
-        Width="1200"
-        MinHeight="600"
-        MinWidth="800"
+        Title="CryptoTrackClient - Crypto Portfolio Tracker"
+        Height="800" Width="1200"
+        MinHeight="600" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         Background="#F5F7FA">
 
     <Window.Resources>
-        <!-- Déclaration des convertisseurs -->
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:ProfitLossColorConverter x:Key="ProfitLossColorConverter"/>
         <converters:PriceChangeColorConverter x:Key="PriceChangeColorConverter"/>

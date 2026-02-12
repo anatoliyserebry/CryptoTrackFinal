@@ -1,9 +1,8 @@
 ﻿<Application x:Class="CryptoTrackClient.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:CryptoTrackClient.Converters"
-             StartupUri="MainWindow.xaml">
-
+             xmlns:converters="clr-namespace:CryptoTrackClient.Converters">
+    
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
