@@ -52,7 +52,7 @@ namespace CryptoTrackClient.ViewModels
 
             LoadCurrenciesCommand = new AsyncRelayCommand(LoadCurrenciesAsync);
             ConvertCurrencyCommand = new AsyncRelayCommand(ConvertCurrencyAsync);
-            SwapCurrenciesCommand = new RelayCommand(SwapCurrencies);
+            SwapCurrenciesCommand = new AsyncRelayCommand(SwapCurrenciesAsync);
             UpdateRateCommand = new AsyncRelayCommand(UpdateExchangeRateAsync);
 
             _ = LoadCurrenciesAsync();
@@ -89,7 +89,7 @@ namespace CryptoTrackClient.ViewModels
             }
         }
 
-        private async void SwapCurrencies()
+        private async Task SwapCurrenciesAsync()
         {
             if (SelectedFromCurrency == null || SelectedToCurrency == null)
                 return;
