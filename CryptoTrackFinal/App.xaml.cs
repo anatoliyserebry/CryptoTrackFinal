@@ -10,7 +10,7 @@ using System.Configuration;
 using System.Data;
 using System.Windows;
 
-namespace CryptoTrackFinal
+namespace CryptoTrackClient
 {
 
     public partial class App : Application
