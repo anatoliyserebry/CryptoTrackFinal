@@ -137,6 +137,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBox Grid.Column="0"
@@ -152,7 +153,8 @@
                                       Width="150"
                                       Margin="0,0,10,0"/>
 
-                            <Button Grid.Column="2" Content="⭐ Favorites" Command="{Binding ShowFavoritesCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                            <Button Grid.Column="2" Content="Apply API" Command="{Binding SwitchApiCommand}" CommandParameter="{Binding ActiveApi}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"/>
+                            <Button Grid.Column="3" Content="⭐ Favorites" Command="{Binding ShowFavoritesCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
                         </Grid>
                     </Border>
 
@@ -227,11 +229,12 @@
                 </Grid>
             </Border>
 
-            <!-- Vue Portfolio (aperçu simplifié) -->
+            <!-- Vue Portfolio -->
             <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}" 
                     Margin="20" Background="White" CornerRadius="5" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -264,10 +267,37 @@
                         </Border>
                     </UniformGrid>
 
-                    <Border Grid.Row="2" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="14">
-                        <TextBlock Text="Track buy/sell transactions from the Portfolio tool and this summary will update automatically."
-                                   Foreground="#7F8C8D" TextWrapping="Wrap"/>
+                    <Border Grid.Row="2" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="12" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding Cryptocurrencies}" SelectedItem="{Binding SelectedPortfolioCurrency}" DisplayMemberPath="Name" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding PortfolioTransactionAmount, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Amount"/>
+                            <TextBox Grid.Column="2" Text="{Binding PortfolioTransactionPrice, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Price"/>
+                            <TextBox Grid.Column="3" Text="{Binding PortfolioTransactionFee, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Fee"/>
+                            <TextBox Grid.Column="4" Text="{Binding PortfolioTransactionExchange, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Exchange"/>
+                            <Button Grid.Column="5" Content="Add" Command="{Binding AddPortfolioTransactionCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        </Grid>
                     </Border>
+
+                    <DataGrid Grid.Row="3" ItemsSource="{Binding PortfolioAssets}" Style="{StaticResource DataGridStyle}" AutoGenerateColumns="False" RowHeight="38">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Asset" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
+                            <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat={}{0:N6}}" Width="120"/>
+                            <DataGridTextColumn Header="Avg Buy" Binding="{Binding AverageBuyPrice, StringFormat={}{0:C2}}" Width="110"/>
+                            <DataGridTextColumn Header="Current" Binding="{Binding CurrentPrice, StringFormat={}{0:C2}}" Width="110"/>
+                            <DataGridTextColumn Header="Value" Binding="{Binding CurrentValue, StringFormat={}{0:C2}}" Width="130"/>
+                            <DataGridTextColumn Header="P/L" Binding="{Binding ProfitLoss, StringFormat={}{0:C2}}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </Border>
 
@@ -294,7 +324,7 @@
 
                         <TextBox Grid.Column="0" Text="{Binding AmountToConvert, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0"/>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedFromCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
-                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrenciesCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
+                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
                         <ComboBox Grid.Column="3" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedToCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}"/>
                     </Grid>
 
