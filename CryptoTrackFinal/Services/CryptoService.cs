@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Timers;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using CryptoTrackClient.Models;
 using CryptoTrackClient.Services.Interfaces;
+using Timer = System.Timers.Timer;
 
 namespace CryptoTrackClient.Services
 {
