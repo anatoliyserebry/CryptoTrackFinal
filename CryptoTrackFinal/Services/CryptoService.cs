@@ -409,7 +409,7 @@ namespace CryptoTrackClient.Services
                 result.Add(new PriceHistory(
                     date,
                     Math.Round(price, 2),
-                    Math.Round(basePrice * 1000 * (1 + (decimal)_random.NextDouble() * 0.5), 2)
+                    Math.Round(basePrice * 1000m * (1m + (decimal)_random.NextDouble() * 0.5m), 2)
                 ));
             }
 

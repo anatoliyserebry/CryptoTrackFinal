@@ -66,11 +66,11 @@ namespace CryptoTrackClient.Services.ApiClients
                     Id = data.id,
                     Name = data.name,
                     Symbol = data.symbol.ToUpper(),
-                    CurrentPrice = data.market_data.current_price.usd,
-                    MarketCap = data.market_data.market_cap.usd,
+                    CurrentPrice = GetUsdValue(data.market_data.current_price),
+                    MarketCap = GetUsdValue(data.market_data.market_cap),
                     PriceChange24h = data.market_data.price_change_24h,
                     PriceChangePercentage24h = data.market_data.price_change_percentage_24h,
-                    Volume24h = data.market_data.total_volume.usd,
+                    Volume24h = GetUsdValue(data.market_data.total_volume),
                     CirculatingSupply = data.market_data.circulating_supply,
                     TotalSupply = data.market_data.total_supply,
                     LastUpdated = DateTime.Now
@@ -225,6 +225,11 @@ namespace CryptoTrackClient.Services.ApiClients
                 "CHF" => "CHF",
                 _ => "$"
             };
+        }
+
+        private static decimal GetUsdValue(Dictionary<string, decimal>? values)
+        {
+            return values != null && values.TryGetValue("usd", out var usdValue) ? usdValue : 0m;
         }
 
         #region JSON Classes
