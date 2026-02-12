@@ -26,6 +26,8 @@ namespace CryptoTrackClient.Services
         private readonly ConcurrentDictionary<string, PriceHistoryCache> _priceHistoryCache;
         private readonly ConcurrentDictionary<string, FiatCurrency> _fiatCurrencyCache;
         private readonly Random _random = new();
+        private readonly Task _initializationTask;
+        private volatile bool _isInitializing;
 
         private IApiClient _activeApiClient;
         private List<string> _favorites = new();
@@ -58,7 +60,7 @@ namespace CryptoTrackClient.Services
             LoadPortfolio();
 
             // Initialize API
-            _ = InitializeApiAsync();
+            _initializationTask = InitializeApiAsync();
 
             // Setup timers
             _refreshTimer = new Timer(_options.RefreshInterval.TotalMilliseconds)
@@ -78,37 +80,64 @@ namespace CryptoTrackClient.Services
 
         private async Task InitializeApiAsync()
         {
+            _isInitializing = true;
             _logger.LogInformation("Testing API connections...");
-
-            foreach (var client in _apiClients)
+            try
             {
-                try
+                foreach (var client in _apiClients)
                 {
-                    if (await client.TestConnectionAsync())
+                    try
                     {
-                        _activeApiClient = client;
-                        _logger.LogInformation("Using {ApiName} API", client.ApiName);
-                        break;
+                        if (await client.TestConnectionAsync())
+                        {
+                            _activeApiClient = client;
+                            _logger.LogInformation("Using {ApiName} API", client.ApiName);
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to connect to {ApiName}", client.ApiName);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to connect to {ApiName}", client.ApiName);
-                }
-            }
 
-            if (_activeApiClient == null)
+                if (_activeApiClient == null)
+                {
+                    _logger.LogError("All APIs failed to connect");
+                    LoadFallbackData();
+                    return;
+                }
+
+                await LoadDataAsync(notify: false);
+                await LoadFiatCurrenciesAsync();
+
+                DataUpdated?.Invoke();
+            }
+            finally
             {
-                _logger.LogError("All APIs failed to connect");
-                LoadFallbackData();
+                _isInitializing = false;
+            }
+        }
+
+        private async Task EnsureInitializedAsync()
+        {
+            if (_isInitializing)
+            {
+                // Avoid deadlocks when DataUpdated handlers run during initialization.
                 return;
             }
 
-            await LoadDataAsync();
-            await LoadFiatCurrenciesAsync();
+            try
+            {
+                await _initializationTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "API initialization failed, continuing with fallback data");
+            }
         }
 
-        private async Task LoadDataAsync()
+        private async Task LoadDataAsync(bool notify = true)
         {
             if (_activeApiClient == null)
             {
@@ -129,7 +158,10 @@ namespace CryptoTrackClient.Services
                         (key, oldValue) => currency);
                 }
 
-                DataUpdated?.Invoke();
+                if (notify)
+                {
+                    DataUpdated?.Invoke();
+                }
                 _logger.LogInformation("Loaded {Count} currencies", data.Count);
             }
             catch (Exception ex)
@@ -273,6 +305,8 @@ namespace CryptoTrackClient.Services
 
         public async Task<List<CryptoCurrency>> GetCryptoCurrenciesAsync()
         {
+            await EnsureInitializedAsync();
+
             if (_cachedCurrencies.IsEmpty)
             {
                 await LoadDataAsync();
@@ -420,6 +454,8 @@ namespace CryptoTrackClient.Services
 
         public async Task<List<FiatCurrency>> GetFiatCurrenciesAsync()
         {
+            await EnsureInitializedAsync();
+
             if (_fiatCurrencyCache.IsEmpty)
             {
                 await LoadFiatCurrenciesAsync();
@@ -434,6 +470,8 @@ namespace CryptoTrackClient.Services
         {
             try
             {
+                await EnsureInitializedAsync();
+
                 if (fromCurrency == toCurrency) return amount;
 
                 // Try active API
