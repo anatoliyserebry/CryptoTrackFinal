@@ -85,7 +85,7 @@ namespace CryptoTrackClient.ViewModels
 
             LoadPortfolioCommand = new AsyncRelayCommand(LoadPortfolioAsync);
             AddTransactionCommand = new AsyncRelayCommand(AddTransactionAsync);
-            DeleteTransactionCommand = new RelayCommand<Guid>(DeleteTransactionAsync);
+            DeleteTransactionCommand = new AsyncRelayCommand<Guid>(DeleteTransactionAsync);
             RefreshPortfolioCommand = new AsyncRelayCommand(RefreshPortfolioAsync);
             ShowAssetDetailsCommand = new RelayCommand<PortfolioAsset>(ShowAssetDetails);
             ClearFormCommand = new RelayCommand(ClearForm);
@@ -153,7 +153,7 @@ namespace CryptoTrackClient.ViewModels
             }
         }
 
-        private async void DeleteTransactionAsync(Guid transactionId)
+        private async Task DeleteTransactionAsync(Guid transactionId)
         {
             if (transactionId == Guid.Empty) return;
 

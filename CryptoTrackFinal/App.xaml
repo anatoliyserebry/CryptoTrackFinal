@@ -1,18 +1,16 @@
 ﻿<Application x:Class="CryptoTrackFinal.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:CryptoTrackFinal" 
-             xmlns:local1="clr-namespace:CryptoTrackClient.Converters"
-             StartupUri="MainWindow.xaml">
+             xmlns:converters="clr-namespace:CryptoTrackClient.Converters">
 
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary>
                     <!-- Converters -->
-                    <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-                    <local:ProfitLossColorConverter x:Key="ProfitLossColorConverter"/>
-                    <local:PriceChangeColorConverter x:Key="PriceChangeColorConverter"/>
+                    <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+                    <converters:ProfitLossColorConverter x:Key="ProfitLossColorConverter"/>
+                    <converters:PriceChangeColorConverter x:Key="PriceChangeColorConverter"/>
 
                     <!-- Styles -->
                     <Style x:Key="NavButtonStyle" TargetType="Button">

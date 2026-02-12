@@ -97,16 +97,16 @@ namespace CryptoTrackClient.ViewModels
             _cryptoService = cryptoService;
 
             RefreshCommand = new AsyncRelayCommand(RefreshDataAsync);
-            ToggleFavoriteCommand = new RelayCommand<string>(ToggleFavorite);
+            ToggleFavoriteCommand = new AsyncRelayCommand<string>(ToggleFavoriteAsync);
             ShowChartCommand = new AsyncRelayCommand<string>(ShowChartAsync);
             ShowFavoritesCommand = new RelayCommand(ShowFavorites);
             ShowAllCommand = new RelayCommand(ShowAll);
             ToggleAutoRefreshCommand = new RelayCommand(ToggleAutoRefresh);
-            ShowDayChartCommand = new RelayCommand(() => LoadChartDataAsync(1));
-            ShowWeekChartCommand = new RelayCommand(() => LoadChartDataAsync(7));
-            ShowMonthChartCommand = new RelayCommand(() => LoadChartDataAsync(30));
+            ShowDayChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(1));
+            ShowWeekChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(7));
+            ShowMonthChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(30));
             BackCommand = new RelayCommand(Back);
-            SwitchApiCommand = new RelayCommand<string>(SwitchApi);
+            SwitchApiCommand = new AsyncRelayCommand<string>(SwitchApiAsync);
             ShowPortfolioCommand = new RelayCommand(() => ShowPortfolioSection());
             ShowConverterCommand = new RelayCommand(() => ShowConverterSection());
             ShowMarketCommand = new RelayCommand(() => ShowMarketSection());
@@ -144,7 +144,7 @@ namespace CryptoTrackClient.ViewModels
             await _cryptoService.RefreshDataAsync();
         }
 
-        private async void ToggleFavorite(string cryptoId)
+        private async Task ToggleFavoriteAsync(string cryptoId)
         {
             if (string.IsNullOrEmpty(cryptoId)) return;
 
@@ -209,7 +209,7 @@ namespace CryptoTrackClient.ViewModels
             PriceHistory.Clear();
         }
 
-        private async void SwitchApi(string apiName)
+        private async Task SwitchApiAsync(string apiName)
         {
             if (IsApiSwitching || string.IsNullOrEmpty(apiName)) return;
 
