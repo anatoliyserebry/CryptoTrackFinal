@@ -27,6 +27,7 @@ namespace CryptoTrackClient.Services
         private readonly ConcurrentDictionary<string, FiatCurrency> _fiatCurrencyCache;
         private readonly Random _random = new();
         private readonly Task _initializationTask;
+        private readonly TimeSpan _initializationWaitTimeout = TimeSpan.FromSeconds(8);
 
         private IApiClient _activeApiClient;
         private List<string> _favorites = new();
@@ -113,11 +114,35 @@ namespace CryptoTrackClient.Services
         {
             try
             {
-                await _initializationTask;
+                if (_initializationTask.IsCompleted)
+                {
+                    await _initializationTask;
+                    return;
+                }
+
+                var completedTask = await Task.WhenAny(_initializationTask, Task.Delay(_initializationWaitTimeout));
+
+                if (completedTask == _initializationTask)
+                {
+                    await _initializationTask;
+                    return;
+                }
+
+                _logger.LogWarning("API initialization is still running after {TimeoutSeconds} seconds. Returning cached/fallback data.",
+                    _initializationWaitTimeout.TotalSeconds);
+
+                if (_cachedCurrencies.IsEmpty)
+                {
+                    LoadFallbackData();
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "API initialization failed, continuing with fallback data");
+                if (_cachedCurrencies.IsEmpty)
+                {
+                    LoadFallbackData();
+                }
             }
         }
 
