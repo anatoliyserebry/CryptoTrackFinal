@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CryptoTrackClient.Converters
+namespace CryptoTrackFinal.Converters
 {
     internal class PriceColorConverter
     {
