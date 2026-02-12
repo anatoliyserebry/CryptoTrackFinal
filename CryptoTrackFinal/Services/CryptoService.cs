@@ -26,6 +26,7 @@ namespace CryptoTrackClient.Services
         private readonly ConcurrentDictionary<string, PriceHistoryCache> _priceHistoryCache;
         private readonly ConcurrentDictionary<string, FiatCurrency> _fiatCurrencyCache;
         private readonly Random _random = new();
+        private readonly Task _initializationTask;
 
         private IApiClient _activeApiClient;
         private List<string> _favorites = new();
@@ -58,7 +59,7 @@ namespace CryptoTrackClient.Services
             LoadPortfolio();
 
             // Initialize API
-            _ = InitializeApiAsync();
+            _initializationTask = InitializeApiAsync();
 
             // Setup timers
             _refreshTimer = new Timer(_options.RefreshInterval.TotalMilliseconds)
@@ -106,6 +107,18 @@ namespace CryptoTrackClient.Services
 
             await LoadDataAsync();
             await LoadFiatCurrenciesAsync();
+        }
+
+        private async Task EnsureInitializedAsync()
+        {
+            try
+            {
+                await _initializationTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "API initialization failed, continuing with fallback data");
+            }
         }
 
         private async Task LoadDataAsync()
@@ -273,6 +286,8 @@ namespace CryptoTrackClient.Services
 
         public async Task<List<CryptoCurrency>> GetCryptoCurrenciesAsync()
         {
+            await EnsureInitializedAsync();
+
             if (_cachedCurrencies.IsEmpty)
             {
                 await LoadDataAsync();
@@ -420,6 +435,8 @@ namespace CryptoTrackClient.Services
 
         public async Task<List<FiatCurrency>> GetFiatCurrenciesAsync()
         {
+            await EnsureInitializedAsync();
+
             if (_fiatCurrencyCache.IsEmpty)
             {
                 await LoadFiatCurrenciesAsync();
@@ -434,6 +451,8 @@ namespace CryptoTrackClient.Services
         {
             try
             {
+                await EnsureInitializedAsync();
+
                 if (fromCurrency == toCurrency) return amount;
 
                 // Try active API
