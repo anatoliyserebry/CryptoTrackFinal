@@ -3,14 +3,22 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:CryptoTrackClient.Converters"
         mc:Ignorable="d"
-        Title="CryptoTrackClient - Crypto Portfolio Tracker"
-        Height="800"
+        Title="CryptoTrackClient - Crypto Portfolio Tracker" 
+        Height="800" 
         Width="1200"
         MinHeight="600"
         MinWidth="800"
         WindowStartupLocation="CenterScreen"
         Background="#F5F7FA">
+
+    <Window.Resources>
+        <!-- Déclaration des convertisseurs -->
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:ProfitLossColorConverter x:Key="ProfitLossColorConverter"/>
+        <converters:PriceChangeColorConverter x:Key="PriceChangeColorConverter"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -19,6 +27,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Barre de navigation -->
         <Border Grid.Row="0" Background="#2C3E50" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -28,11 +37,13 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Titre de l'application -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="₿" FontSize="24" Foreground="#3498DB" Margin="0,0,10,0"/>
                     <TextBlock Text="CryptoTrackClient" FontSize="20" FontWeight="Bold" Foreground="White"/>
                 </StackPanel>
 
+                <!-- Boutons de navigation -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Content="📊 Market" Command="{Binding ShowMarketCommand}">
                         <Button.Style>
@@ -71,6 +82,7 @@
                     </Button>
                 </StackPanel>
 
+                <!-- Résumé du portefeuille -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
                     <StackPanel Orientation="Vertical" Margin="0,0,20,0">
                         <TextBlock Text="Portfolio Value" Foreground="#BDC3C7" FontSize="11"/>
@@ -90,6 +102,7 @@
                     </StackPanel>
                 </StackPanel>
 
+                <!-- Statut API et rafraîchissement -->
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Background="#34495E" CornerRadius="15" Padding="10,5">
                         <TextBlock Text="{Binding ActiveApi}" Foreground="White" FontSize="12"/>
@@ -100,14 +113,19 @@
             </Grid>
         </Border>
 
+        <!-- Contenu principal -->
         <Grid Grid.Row="1">
-            <Border Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" Panel.ZIndex="1000">
+            <!-- Overlay de chargement -->
+            <Border Background="#80000000" 
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Panel.ZIndex="1000">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <ProgressBar IsIndeterminate="True" Width="200" Height="6" Style="{StaticResource ModernProgressBarStyle}"/>
                     <TextBlock Text="Loading..." Foreground="White" Margin="0,10,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
+            <!-- Vue Marché -->
             <Border Visibility="{Binding ShowMarket, Converter={StaticResource BoolToVisibilityConverter}}" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -115,6 +133,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
+                    <!-- Barre de recherche et filtres -->
                     <Border Grid.Row="0" Background="White" CornerRadius="5" Padding="15" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -140,8 +159,13 @@
                         </Grid>
                     </Border>
 
+                    <!-- Liste des crypto-monnaies -->
                     <Border Grid.Row="1" Background="White" CornerRadius="5" Padding="0">
-                        <DataGrid ItemsSource="{Binding FilteredCurrencies}" SelectedItem="{Binding SelectedCrypto}" Style="{StaticResource DataGridStyle}" AutoGenerateColumns="False" RowHeight="40">
+                        <DataGrid ItemsSource="{Binding FilteredCurrencies}" 
+                                  SelectedItem="{Binding SelectedCrypto}" 
+                                  Style="{StaticResource DataGridStyle}" 
+                                  AutoGenerateColumns="False" 
+                                  RowHeight="40">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="" Width="50">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -206,7 +230,9 @@
                 </Grid>
             </Border>
 
-            <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}" Margin="20" Background="White" CornerRadius="5" Padding="20">
+            <!-- Vue Portfolio (aperçu simplifié) -->
+            <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}" 
+                    Margin="20" Background="White" CornerRadius="5" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -248,7 +274,9 @@
                 </Grid>
             </Border>
 
-            <Border Visibility="{Binding ShowConverter, Converter={StaticResource BoolToVisibilityConverter}}" Margin="20" Background="White" CornerRadius="5" Padding="20">
+            <!-- Vue Convertisseur (simplifié) -->
+            <Border Visibility="{Binding ShowConverter, Converter={StaticResource BoolToVisibilityConverter}}" 
+                    Margin="20" Background="White" CornerRadius="5" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -269,14 +297,15 @@
 
                         <TextBox Grid.Column="0" Text="{Binding AmountToConvert, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0"/>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedFromCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
-                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
+                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrenciesCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
                         <ComboBox Grid.Column="3" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedToCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}"/>
                     </Grid>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="Convert" Command="{Binding ConvertCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,12,0"/>
                         <TextBlock VerticalAlignment="Center" Foreground="#5D6D7E">
-                            <Run Text="Rate: 1 "/><Run Text="{Binding SelectedFromCurrency.Code}"/><Run Text=" = "/><Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
+                            <Run Text="Rate: 1 "/><Run Text="{Binding SelectedFromCurrency.Code}"/><Run Text=" = "/>
+                            <Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
                         </TextBlock>
                     </StackPanel>
 
@@ -288,7 +317,9 @@
                 </Grid>
             </Border>
 
-            <Border Visibility="{Binding ShowChart, Converter={StaticResource BoolToVisibilityConverter}}" Background="White" CornerRadius="5" Margin="20" Padding="20">
+            <!-- Vue Graphique -->
+            <Border Visibility="{Binding ShowChart, Converter={StaticResource BoolToVisibilityConverter}}" 
+                    Background="White" CornerRadius="5" Margin="20" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -331,6 +362,7 @@
             </Border>
         </Grid>
 
+        <!-- Barre d'état -->
         <Border Grid.Row="2" Background="#34495E" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
