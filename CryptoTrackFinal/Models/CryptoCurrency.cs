@@ -38,7 +38,7 @@ namespace CryptoTrackClient.Models
         public decimal? TotalSupply { get; set; }
         public int? Rank { get; set; }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -124,7 +124,7 @@ namespace CryptoTrackClient.Models
         public decimal ConvertFromUSD(decimal usdAmount) => usdAmount / RateToUSD;
         public decimal ConvertToUSD(decimal amount) => amount * RateToUSD;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -189,7 +189,7 @@ namespace CryptoTrackClient.Models
         public decimal ProfitLoss => CurrentValue - TotalCost;
         public decimal ProfitLossPercentage => TotalCost > 0 ? (ProfitLoss / TotalCost) * 100 : 0;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -286,7 +286,7 @@ namespace CryptoTrackClient.Models
         public List<Transaction> Transactions { get; set; } = new();
         public decimal PercentageOfPortfolio { get; set; }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -335,7 +335,7 @@ namespace CryptoTrackClient.Models
         public DateTime LastUpdated { get; set; }
         public List<PortfolioAsset> Assets { get; set; } = new();
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {

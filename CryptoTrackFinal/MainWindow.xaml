@@ -3,409 +3,1155 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="clr-namespace:CryptoTrackClient.Converters"
+        xmlns:oxy="http://oxyplot.org/wpf"
         mc:Ignorable="d"
-        Title="CryptoTrackClient - Crypto Portfolio Tracker"
-        Height="800" Width="1200"
-        MinHeight="600" MinWidth="800"
+        Title="CryptoTrack"
+        Height="860"
+        Width="1380"
+        MinHeight="720"
+        MinWidth="1080"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F7FA">
-
-    <Window.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:ProfitLossColorConverter x:Key="ProfitLossColorConverter"/>
-        <converters:PriceChangeColorConverter x:Key="PriceChangeColorConverter"/>
-    </Window.Resources>
-
+        Background="{StaticResource AppBackgroundBrush}">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#EEF3F8" Offset="0"/>
+                <GradientStop Color="#E8F1F7" Offset="0.55"/>
+                <GradientStop Color="#F7FBFE" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
 
-        <!-- Barre de navigation -->
-        <Border Grid.Row="0" Background="#2C3E50" Padding="10">
+        <Border Margin="20" Style="{StaticResource ShellFrameStyle}">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <!-- Titre de l'application -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="₿" FontSize="24" Foreground="#3498DB" Margin="0,0,10,0"/>
-                    <TextBlock Text="CryptoTrackClient" FontSize="20" FontWeight="Bold" Foreground="White"/>
-                </StackPanel>
+                <Border Grid.Row="0"
+                        Background="{StaticResource HeroBrush}"
+                        CornerRadius="28"
+                        Padding="28"
+                        Margin="0,0,0,18">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                <!-- Boutons de navigation -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="📊 Market" Command="{Binding ShowMarketCommand}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShowMarket}" Value="True">
-                                        <Setter Property="Background" Value="#3498DB"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <Button Content="💰 Portfolio" Command="{Binding ShowPortfolioCommand}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShowPortfolio}" Value="True">
-                                        <Setter Property="Background" Value="#3498DB"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <Button Content="💱 Converter" Command="{Binding ShowConverterCommand}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShowConverter}" Value="True">
-                                        <Setter Property="Background" Value="#3498DB"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-
-                <!-- Résumé du portefeuille -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
-                    <StackPanel Orientation="Vertical" Margin="0,0,20,0">
-                        <TextBlock Text="Portfolio Value" Foreground="#BDC3C7" FontSize="11"/>
-                        <TextBlock Text="{Binding PortfolioValue, StringFormat={}{0:C2}}" Foreground="White" FontSize="14" FontWeight="Bold"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="P/L" Foreground="#BDC3C7" FontSize="11"/>
-                        <TextBlock Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}" FontSize="14" FontWeight="Bold">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0:C2} ({1:F2}%)">
-                                    <Binding Path="PortfolioProfitLoss"/>
-                                    <Binding Path="PortfolioProfitLossPercentage"/>
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                    </StackPanel>
-                </StackPanel>
-
-                <!-- Statut API et rafraîchissement -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#34495E" CornerRadius="15" Padding="10,5">
-                        <TextBlock Text="{Binding ActiveApi}" Foreground="White" FontSize="12"/>
-                    </Border>
-
-                    <Button Content="🔄" Command="{Binding RefreshCommand}" Style="{StaticResource NavButtonStyle}" Margin="10,0,0,0" Width="40"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Contenu principal -->
-        <Grid Grid.Row="1">
-            <!-- Overlay de chargement -->
-            <Border Background="#80000000" 
-                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Panel.ZIndex="1000">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <ProgressBar IsIndeterminate="True" Width="200" Height="6" Style="{StaticResource ModernProgressBarStyle}"/>
-                    <TextBlock Text="Loading..." Foreground="White" Margin="0,10,0,0" HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Vue Marché -->
-            <Border Visibility="{Binding ShowMarket, Converter={StaticResource BoolToVisibilityConverter}}" Padding="20">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Barre de recherche et filtres -->
-                    <Border Grid.Row="0" Background="White" CornerRadius="5" Padding="15" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="CryptoTrack"
+                                           Style="{StaticResource HeroTitleTextStyle}"/>
+                                <TextBlock Text="A cleaner dashboard to watch the market, track your portfolio and convert currencies in one place."
+                                           Style="{StaticResource HeroSubtitleTextStyle}"
+                                           Margin="0,8,0,0"
+                                           Width="560"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Top">
+                                <Border Style="{StaticResource PillBorderStyle}"
+                                        Margin="0,0,12,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Feed"
+                                                   Foreground="#D7E6F4"
+                                                   FontSize="11"
+                                                   Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding ActiveApi}"
+                                                   Foreground="White"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Button Content="Refresh"
+                                        Command="{Binding RefreshCommand}"
+                                        Style="{StaticResource NavButtonStyle}"
+                                        Margin="0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Grid.Row="1" Margin="0,26,0,0">
+                            <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox Grid.Column="0"
-                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Search cryptocurrency..."
-                                     Style="{StaticResource ModernTextBoxStyle}"
-                                     Margin="0,0,10,0"/>
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Button Content="Market"
+                                        Command="{Binding ShowMarketCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowMarket}" Value="True">
+                                                    <Setter Property="Background" Value="#FFFFFFFF"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="#FFFFFFFF"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
 
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{Binding AvailableApis}"
-                                      SelectedItem="{Binding ActiveApi, Mode=TwoWay}"
-                                      Style="{StaticResource ModernComboBoxStyle}"
-                                      Width="150"
-                                      Margin="0,0,10,0"/>
+                                <Button Content="Portfolio"
+                                        Command="{Binding ShowPortfolioCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowPortfolio}" Value="True">
+                                                    <Setter Property="Background" Value="#FFFFFFFF"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="#FFFFFFFF"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
 
-                            <Button Grid.Column="2" Content="Apply API" Command="{Binding SwitchApiCommand}" CommandParameter="{Binding ActiveApi}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"/>
-                            <Button Grid.Column="3" Content="⭐ Favorites" Command="{Binding ShowFavoritesCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                                <Button Content="Converter"
+                                        Command="{Binding ShowConverterCommand}"
+                                        Margin="0">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowConverter}" Value="True">
+                                                    <Setter Property="Background" Value="#FFFFFFFF"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="#FFFFFFFF"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding StatusMessage}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="#D7E6F4"
+                                       FontSize="13"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="24,0"/>
+
+                            <UniformGrid Grid.Column="2"
+                                         Columns="3"
+                                         Rows="1">
+                                <Border Style="{StaticResource HeroMetricCardStyle}"
+                                        Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Portfolio value"
+                                                   Foreground="#D7E6F4"
+                                                   FontSize="11"/>
+                                        <TextBlock Text="{Binding PortfolioValue, StringFormat={}{0:C2}}"
+                                                   Foreground="White"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"
+                                                   Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource HeroMetricCardStyle}"
+                                        Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Profit and loss"
+                                                   Foreground="#D7E6F4"
+                                                   FontSize="11"/>
+                                        <TextBlock Text="{Binding PortfolioProfitLoss, StringFormat={}{0:C2}}"
+                                                   Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"
+                                                   Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource HeroMetricCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Performance"
+                                                   Foreground="#D7E6F4"
+                                                   FontSize="11"/>
+                                        <TextBlock Text="{Binding PortfolioProfitLossPercentage, StringFormat={}{0:F2}%}"
+                                                   Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"
+                                                   Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
                         </Grid>
-                    </Border>
+                    </Grid>
+                </Border>
 
-                    <!-- Liste des crypto-monnaies -->
-                    <Border Grid.Row="1" Background="White" CornerRadius="5" Padding="0">
-                        <DataGrid ItemsSource="{Binding FilteredCurrencies}" 
-                                  SelectedItem="{Binding SelectedCrypto}" 
-                                  Style="{StaticResource DataGridStyle}" 
-                                  AutoGenerateColumns="False" 
-                                  RowHeight="40">
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="" Width="50">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Content="⭐"
-                                                    Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding Id}"
-                                                    Background="Transparent"
-                                                    BorderThickness="0">
+                <Grid Grid.Row="1">
+                    <Border Visibility="{Binding ShowMarket, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Margin="0,0,0,18">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.2*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        Style="{StaticResource PanelCardStyle}"
+                                        Margin="0,0,18,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="1.1*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                                            <TextBlock Text="Search the market"
+                                                       Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"
+                                                     ToolTip="Search by name or symbol"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Margin="0,0,18,0">
+                                            <TextBlock Text="Market source"
+                                                       Style="{StaticResource LabelTextStyle}"/>
+                                            <ComboBox ItemsSource="{Binding AvailableApis}"
+                                                      SelectedItem="{Binding SelectedApi, Mode=TwoWay}"
+                                                      Style="{StaticResource ModernComboBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2"
+                                                    VerticalAlignment="Bottom">
+                                            <Button Command="{Binding SwitchApiCommand}">
                                                 <Button.Style>
-                                                    <Style TargetType="Button">
-                                                        <Setter Property="Foreground" Value="#BDC3C7"/>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                                        <Setter Property="Content" Value="Apply"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                                                <Setter Property="Foreground" Value="#FFD700"/>
+                                                            <DataTrigger Binding="{Binding IsApiSwitching}" Value="True">
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                <Setter Property="Content" Value="Applying"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Button.Style>
                                             </Button>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
 
-                                <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="60"/>
-                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150"/>
-                                <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
-                                <DataGridTextColumn Header="Price" Binding="{Binding CurrentPrice, StringFormat={}{0:C2}}" Width="100"/>
+                                <Border Grid.Column="1"
+                                        Style="{StaticResource PanelCardStyle}"
+                                        Margin="0,0,18,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Displayed assets"
+                                                   Style="{StaticResource MetricLabelTextStyle}"/>
+                                        <TextBlock Text="{Binding VisibleCurrencyCount}"
+                                                   Style="{StaticResource MetricValueTextStyle}"
+                                                   Margin="0,8,0,0"/>
+                                        <TextBlock Text="{Binding MarketSummary}"
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
 
-                                <DataGridTextColumn Header="24h Change" Width="120">
-                                    <DataGridTextColumn.Binding>
-                                        <MultiBinding StringFormat="{}{0:C2} ({1:F2}%)">
-                                            <Binding Path="PriceChange24h"/>
-                                            <Binding Path="PriceChangePercentage24h"/>
-                                        </MultiBinding>
-                                    </DataGridTextColumn.Binding>
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Right"/>
-                                            <Setter Property="Foreground" Value="{Binding PriceChange24h, Converter={StaticResource PriceChangeColorConverter}}"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
+                                <Border Grid.Column="2"
+                                        Style="{StaticResource PanelCardSoftStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Favorites tracked"
+                                                   Style="{StaticResource MetricLabelTextStyle}"/>
+                                        <TextBlock Text="{Binding FavoriteCount}"
+                                                   Style="{StaticResource MetricValueTextStyle}"
+                                                   Margin="0,8,0,0"/>
+                                        <TextBlock Text="Pin the coins you want to revisit quickly."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
 
-                                <DataGridTextColumn Header="Market Cap" Binding="{Binding MarketCap, StringFormat={}{0:C0}}" Width="120"/>
-                                <DataGridTextColumn Header="24h Volume" Binding="{Binding Volume24h, StringFormat={}{0:C0}}" Width="120"/>
+                            <Border Grid.Row="1"
+                                    Style="{StaticResource PanelCardStyle}"
+                                    Padding="0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                <DataGridTemplateColumn Header="Actions" Width="100">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Content="📈 Chart"
-                                                    Command="{Binding DataContext.ShowChartCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding Id}"
-                                                    Style="{StaticResource PrimaryButtonStyle}"
-                                                    Padding="8,4"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
+                                    <Grid Margin="24,24,24,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="Market overview"
+                                                       Style="{StaticResource SectionTitleTextStyle}"/>
+                                            <TextBlock Text="{Binding MarketSummary}"
+                                                       Style="{StaticResource SectionSubtitleTextStyle}"
+                                                       Margin="0,6,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1"
+                                                    Orientation="Horizontal"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="All assets"
+                                                    Command="{Binding ShowAllCommand}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                        <Setter Property="Margin" Value="0,0,12,0"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ShowOnlyFavorites}" Value="False">
+                                                                <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+
+                                            <Button Content="Favorites"
+                                                    Command="{Binding ShowFavoritesCommand}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ShowOnlyFavorites}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Grid.Row="1">
+                                        <DataGrid ItemsSource="{Binding FilteredCurrencies}"
+                                                  SelectedItem="{Binding SelectedCrypto}"
+                                                  Style="{StaticResource DataGridStyle}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="#"
+                                                                    Binding="{Binding Rank}"
+                                                                    Width="70"/>
+
+                                                <DataGridTemplateColumn Header="Asset" Width="220">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                <TextBlock Text="{Binding Symbol}"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           FontSize="12"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <DataGridTextColumn Header="Price"
+                                                                    Binding="{Binding CurrentPrice, StringFormat={}{0:C2}}"
+                                                                    Width="120"/>
+
+                                                <DataGridTemplateColumn Header="24h change" Width="150">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Foreground="{Binding PriceChange24h, Converter={StaticResource PriceChangeColorConverter}}"
+                                                                       FontWeight="SemiBold">
+                                                                <TextBlock.Text>
+                                                                    <MultiBinding StringFormat="{}{0:C2} ({1:F2}%)">
+                                                                        <Binding Path="PriceChange24h"/>
+                                                                        <Binding Path="PriceChangePercentage24h"/>
+                                                                    </MultiBinding>
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <DataGridTextColumn Header="Market cap"
+                                                                    Binding="{Binding MarketCap, StringFormat={}{0:C0}}"
+                                                                    Width="150"/>
+
+                                                <DataGridTextColumn Header="24h volume"
+                                                                    Binding="{Binding Volume24h, StringFormat={}{0:C0}}"
+                                                                    Width="150"/>
+
+                                                <DataGridTemplateColumn Header="Favorite" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                    CommandParameter="{Binding Id}">
+                                                                <Button.Style>
+                                                                    <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                                        <Setter Property="Content" Value="Save"/>
+                                                                        <Setter Property="Padding" Value="14,8"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                                <Setter Property="Content" Value="Saved"/>
+                                                                                <Setter Property="Background" Value="#EAF8F4"/>
+                                                                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <DataGridTemplateColumn Header="Chart" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Open"
+                                                                    Command="{Binding DataContext.ShowChartCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                    CommandParameter="{Binding Id}"
+                                                                    Style="{StaticResource PrimaryButtonStyle}"
+                                                                    Padding="14,8"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+
+                                        <Border Background="#F7FBFE"
+                                                CornerRadius="18"
+                                                Padding="28"
+                                                Margin="24"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasFilteredCurrencies}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="No assets match your current filters."
+                                                           Style="{StaticResource SectionTitleTextStyle}"
+                                                           HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Try another search or switch back to the full market view."
+                                                           Style="{StaticResource SectionSubtitleTextStyle}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </Grid>
                     </Border>
-                </Grid>
-            </Border>
 
-            <!-- Vue Portfolio -->
-            <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}" 
-                    Margin="20" Background="White" CornerRadius="5" Padding="20">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    <Border Visibility="{Binding ShowPortfolio, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Portfolio Overview" Style="{StaticResource TitleTextStyle}"/>
+                            <UniformGrid Columns="3"
+                                         Rows="1"
+                                         Margin="0,0,0,18">
+                                <Border Style="{StaticResource PanelCardStyle}"
+                                        Margin="0,0,18,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Total value"
+                                                   Style="{StaticResource MetricLabelTextStyle}"/>
+                                        <TextBlock Text="{Binding PortfolioValue, StringFormat={}{0:C2}}"
+                                                   Style="{StaticResource MetricValueTextStyle}"
+                                                   Margin="0,8,0,0"/>
+                                        <TextBlock Text="Live valuation of your tracked holdings."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
 
-                    <UniformGrid Grid.Row="1" Columns="3" Margin="0,0,0,15">
-                        <Border Background="#ECF7FF" CornerRadius="5" Padding="12" Margin="0,0,10,0">
-                            <StackPanel>
-                                <TextBlock Text="Total Value" Foreground="#5D6D7E" FontSize="12"/>
-                                <TextBlock Text="{Binding PortfolioValue, StringFormat={}{0:C2}}" FontSize="20" FontWeight="Bold" Foreground="#2C3E50"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Background="#F0FFF4" CornerRadius="5" Padding="12" Margin="0,0,10,0">
-                            <StackPanel>
-                                <TextBlock Text="Profit / Loss" Foreground="#5D6D7E" FontSize="12"/>
-                                <TextBlock FontSize="20" FontWeight="Bold" Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}">
-                                    <Run Text="{Binding PortfolioProfitLoss, StringFormat={}{0:C2}}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-                        <Border Background="#F6F9FC" CornerRadius="5" Padding="12">
-                            <StackPanel>
-                                <TextBlock Text="Change %" Foreground="#5D6D7E" FontSize="12"/>
-                                <TextBlock FontSize="20" FontWeight="Bold" Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}">
-                                    <Run Text="{Binding PortfolioProfitLossPercentage, StringFormat={}{0:F2}%}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
+                                <Border Style="{StaticResource PanelCardStyle}"
+                                        Margin="0,0,18,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Profit and loss"
+                                                   Style="{StaticResource MetricLabelTextStyle}"/>
+                                        <TextBlock Text="{Binding PortfolioProfitLoss, StringFormat={}{0:C2}}"
+                                                   Style="{StaticResource MetricValueTextStyle}"
+                                                   Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}"
+                                                   Margin="0,8,0,0"/>
+                                        <TextBlock Text="Calculated from your recorded buy activity."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
 
-                    <Border Grid.Row="2" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="12" Margin="0,0,0,12">
+                                <Border Style="{StaticResource PanelCardSoftStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Performance"
+                                                   Style="{StaticResource MetricLabelTextStyle}"/>
+                                        <TextBlock Text="{Binding PortfolioProfitLossPercentage, StringFormat={}{0:F2}%}"
+                                                   Style="{StaticResource MetricValueTextStyle}"
+                                                   Foreground="{Binding PortfolioProfitLoss, Converter={StaticResource ProfitLossColorConverter}}"
+                                                   Margin="0,8,0,0"/>
+                                        <TextBlock Text="Contribution versus your invested capital."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <Border Grid.Row="1"
+                                    Style="{StaticResource PanelCardStyle}"
+                                    Margin="0,0,0,18">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel>
+                                        <TextBlock Text="Add a portfolio transaction"
+                                                   Style="{StaticResource SectionTitleTextStyle}"/>
+                                        <TextBlock Text="Record a manual buy to keep the dashboard aligned with your actual holdings."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+
+                                    <Grid Grid.Row="1" Margin="0,20,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                            <TextBlock Text="Asset" Style="{StaticResource LabelTextStyle}"/>
+                                            <ComboBox ItemsSource="{Binding Cryptocurrencies}"
+                                                      SelectedItem="{Binding SelectedPortfolioCurrency}"
+                                                      DisplayMemberPath="Name"
+                                                      Style="{StaticResource ModernComboBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                            <TextBlock Text="Amount" Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding PortfolioTransactionAmount, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Margin="0,0,14,0">
+                                            <TextBlock Text="Buy price" Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding PortfolioTransactionPrice, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="3" Margin="0,0,14,0">
+                                            <TextBlock Text="Fee" Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding PortfolioTransactionFee, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="4" Margin="0,0,14,0">
+                                            <TextBlock Text="Exchange" Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding PortfolioTransactionExchange, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="5"
+                                                    VerticalAlignment="Bottom">
+                                            <Button Content="Add transaction"
+                                                    Command="{Binding AddPortfolioTransactionCommand}"
+                                                    Style="{StaticResource PrimaryButtonStyle}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.1*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        Style="{StaticResource PanelCardStyle}"
+                                        Padding="0"
+                                        Margin="0,0,18,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Margin="24,24,24,16">
+                                            <TextBlock Text="Holdings"
+                                                       Style="{StaticResource SectionTitleTextStyle}"/>
+                                            <TextBlock Text="Each row combines your buy history with the latest market price."
+                                                       Style="{StaticResource SectionSubtitleTextStyle}"
+                                                       Margin="0,6,0,0"/>
+                                        </StackPanel>
+
+                                        <DataGrid Grid.Row="1"
+                                                  ItemsSource="{Binding PortfolioAssets}"
+                                                  Style="{StaticResource DataGridStyle}">
+                                            <DataGrid.Columns>
+                                                <DataGridTemplateColumn Header="Asset" Width="220">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}"
+                                                                           FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding Symbol}"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           FontSize="12"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <DataGridTextColumn Header="Amount"
+                                                                    Binding="{Binding Amount, StringFormat={}{0:N6}}"
+                                                                    Width="120"/>
+
+                                                <DataGridTextColumn Header="Avg buy"
+                                                                    Binding="{Binding AverageBuyPrice, StringFormat={}{0:C2}}"
+                                                                    Width="110"/>
+
+                                                <DataGridTextColumn Header="Current"
+                                                                    Binding="{Binding CurrentPrice, StringFormat={}{0:C2}}"
+                                                                    Width="110"/>
+
+                                                <DataGridTextColumn Header="Value"
+                                                                    Binding="{Binding CurrentValue, StringFormat={}{0:C2}}"
+                                                                    Width="130"/>
+
+                                                <DataGridTextColumn Header="Weight"
+                                                                    Binding="{Binding PercentageOfPortfolio, StringFormat={}{0:F1}%}"
+                                                                    Width="90"/>
+
+                                                <DataGridTemplateColumn Header="P/L" Width="130">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:C2}}"
+                                                                       Foreground="{Binding ProfitLoss, Converter={StaticResource ProfitLossColorConverter}}"
+                                                                       FontWeight="SemiBold"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Column="1"
+                                        Style="{StaticResource PanelCardSoftStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="Recent activity"
+                                                       Style="{StaticResource SectionTitleTextStyle}"/>
+                                            <TextBlock Text="Your latest portfolio entries are surfaced here for a quick sanity check."
+                                                       Style="{StaticResource SectionSubtitleTextStyle}"
+                                                       Margin="0,6,0,0"/>
+                                        </StackPanel>
+
+                                        <Grid Grid.Row="1" Margin="0,18,0,0">
+                                            <TextBlock Text="No transactions recorded yet."
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource TextSecondaryBrush}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ElementName=TransactionFeed, Path=HasItems}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <ItemsControl x:Name="TransactionFeed"
+                                                              ItemsSource="{Binding PortfolioTransactions}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="#FFFFFF"
+                                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="18"
+                                                                    Padding="16"
+                                                                    Margin="0,0,0,12">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="{Binding CryptoName}"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                                                                   Margin="0,4,0,0">
+                                                                            <Run Text="{Binding Amount, StringFormat={}{0:N6}}"/>
+                                                                            <Run Text=" "/>
+                                                                            <Run Text="{Binding CryptoSymbol}"/>
+                                                                            <Run Text=" on "/>
+                                                                            <Run Text="{Binding Exchange}"/>
+                                                                        </TextBlock>
+                                                                    </StackPanel>
+
+                                                                    <StackPanel Grid.Column="1"
+                                                                                HorizontalAlignment="Right">
+                                                                        <TextBlock Text="{Binding TotalCost, StringFormat={}{0:C2}}"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                                   HorizontalAlignment="Right"/>
+                                                                        <TextBlock Text="{Binding TransactionDate, StringFormat={}{0:MMM dd, HH:mm}}"
+                                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                                   Margin="0,4,0,0"
+                                                                                   HorizontalAlignment="Right"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Visibility="{Binding ShowConverter, Converter={StaticResource BoolToVisibilityConverter}}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding Cryptocurrencies}" SelectedItem="{Binding SelectedPortfolioCurrency}" DisplayMemberPath="Name" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding PortfolioTransactionAmount, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Amount"/>
-                            <TextBox Grid.Column="2" Text="{Binding PortfolioTransactionPrice, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Price"/>
-                            <TextBox Grid.Column="3" Text="{Binding PortfolioTransactionFee, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Fee"/>
-                            <TextBox Grid.Column="4" Text="{Binding PortfolioTransactionExchange, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0" ToolTip="Exchange"/>
-                            <Button Grid.Column="5" Content="Add" Command="{Binding AddPortfolioTransactionCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                            <Border Grid.Column="0"
+                                    Style="{StaticResource PanelCardStyle}"
+                                    Margin="0,0,18,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel>
+                                        <TextBlock Text="Currency converter"
+                                                   Style="{StaticResource SectionTitleTextStyle}"/>
+                                        <TextBlock Text="Preview live fiat conversions without leaving the dashboard."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+
+                                    <Grid Grid.Row="1" Margin="0,24,0,18">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.5*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                            <TextBlock Text="Amount" Style="{StaticResource LabelTextStyle}"/>
+                                            <TextBox Text="{Binding AmountToConvert, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ModernTextBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                            <TextBlock Text="From" Style="{StaticResource LabelTextStyle}"/>
+                                            <ComboBox ItemsSource="{Binding FiatCurrencies}"
+                                                      SelectedItem="{Binding SelectedFromCurrency}"
+                                                      DisplayMemberPath="Code"
+                                                      Style="{StaticResource ModernComboBoxStyle}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="0,0,14,0">
+                                            <Button Content="Swap"
+                                                    Command="{Binding SwapCurrencyCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Padding="16,10"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="3">
+                                            <TextBlock Text="To" Style="{StaticResource LabelTextStyle}"/>
+                                            <ComboBox ItemsSource="{Binding FiatCurrencies}"
+                                                      SelectedItem="{Binding SelectedToCurrency}"
+                                                      DisplayMemberPath="Code"
+                                                      Style="{StaticResource ModernComboBoxStyle}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Border Grid.Row="2"
+                                            Background="{StaticResource AccentGradientBrush}"
+                                            CornerRadius="24"
+                                            Padding="24">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel>
+                                                <TextBlock Text="Converted amount"
+                                                           Foreground="#DDF7F3"
+                                                           FontSize="12"/>
+                                                <TextBlock Foreground="White"
+                                                           FontSize="32"
+                                                           FontWeight="Bold"
+                                                           Margin="0,8,0,0">
+                                                    <Run Text="{Binding ConvertedAmount, StringFormat={}{0:N4}}"/>
+                                                    <Run Text=" "/>
+                                                    <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1"
+                                                    Content="Convert now"
+                                                    Command="{Binding ConvertCurrencyCommand}"
+                                                    Style="{StaticResource NavButtonStyle}"
+                                                    Margin="18,0,0,0"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Row="3"
+                                                Margin="0,20,0,0">
+                                        <TextBlock Style="{StaticResource SectionSubtitleTextStyle}">
+                                            <Run Text="Rate: 1 "/>
+                                            <Run Text="{Binding SelectedFromCurrency.Code}"/>
+                                            <Run Text=" = "/>
+                                            <Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="1"
+                                    Style="{StaticResource PanelCardSoftStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Conversion insight"
+                                               Style="{StaticResource SectionTitleTextStyle}"/>
+                                    <TextBlock Text="Use this panel to sense-check the selected pair and current quote."
+                                               Style="{StaticResource SectionSubtitleTextStyle}"
+                                               Margin="0,6,0,22"/>
+
+                                    <Border Background="#FFFFFF"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="20"
+                                            Padding="18"
+                                            Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock Text="Selected pair"
+                                                       Style="{StaticResource MetricLabelTextStyle}"/>
+                                            <TextBlock FontSize="24"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Margin="0,8,0,0">
+                                                <Run Text="{Binding SelectedFromCurrency.Code}"/>
+                                                <Run Text=" / "/>
+                                                <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="#FFFFFF"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="20"
+                                            Padding="18"
+                                            Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock Text="From currency"
+                                                       Style="{StaticResource MetricLabelTextStyle}"/>
+                                            <TextBlock Text="{Binding SelectedFromCurrency.Name}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="#FFFFFF"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="20"
+                                            Padding="18">
+                                        <StackPanel>
+                                            <TextBlock Text="To currency"
+                                                       Style="{StaticResource MetricLabelTextStyle}"/>
+                                            <TextBlock Text="{Binding SelectedToCurrency.Name}"
+                                                       FontSize="20"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
                         </Grid>
                     </Border>
 
-                    <DataGrid Grid.Row="3" ItemsSource="{Binding PortfolioAssets}" Style="{StaticResource DataGridStyle}" AutoGenerateColumns="False" RowHeight="38">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Asset" Binding="{Binding Name}" Width="*"/>
-                            <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
-                            <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat={}{0:N6}}" Width="120"/>
-                            <DataGridTextColumn Header="Avg Buy" Binding="{Binding AverageBuyPrice, StringFormat={}{0:C2}}" Width="110"/>
-                            <DataGridTextColumn Header="Current" Binding="{Binding CurrentPrice, StringFormat={}{0:C2}}" Width="110"/>
-                            <DataGridTextColumn Header="Value" Binding="{Binding CurrentValue, StringFormat={}{0:C2}}" Width="130"/>
-                            <DataGridTextColumn Header="P/L" Binding="{Binding ProfitLoss, StringFormat={}{0:C2}}" Width="120"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Border Visibility="{Binding ShowChart, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Panel.ZIndex="20">
+                        <Grid>
+                            <Border Background="#BFF8FBFE"
+                                    CornerRadius="28"/>
+
+                            <Grid Margin="18">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <Border Style="{StaticResource PanelCardStyle}"
+                                        Margin="0,0,0,18">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding SelectedCrypto.Name, StringFormat={}{0} price view}"
+                                                       Style="{StaticResource SectionTitleTextStyle}"/>
+                                            <TextBlock Style="{StaticResource SectionSubtitleTextStyle}"
+                                                       Margin="0,6,0,0">
+                                                <Run Text="Current price: "/>
+                                                <Run Text="{Binding SelectedCrypto.CurrentPrice, StringFormat={}{0:C2}}"/>
+                                                <Run Text="   "/>
+                                                <Run Text="24h: "/>
+                                                <Run Text="{Binding SelectedCrypto.PriceChangePercentage24h, StringFormat={}{0:F2}%}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1"
+                                                Content="Back"
+                                                Command="{Binding BackCommand}"
+                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <Grid Grid.Row="1" Margin="0,0,0,18">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel>
+                                        <TextBlock Text="Market trend"
+                                                   Style="{StaticResource SectionTitleTextStyle}"/>
+                                        <TextBlock Text="The line chart is generated from the selected history window."
+                                                   Style="{StaticResource SectionSubtitleTextStyle}"
+                                                   Margin="0,6,0,0"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center">
+                                        <Button Content="1D"
+                                                Command="{Binding ShowDayChartCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                    <Setter Property="Margin" Value="0,0,12,0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedChartDays}" Value="1">
+                                                            <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+
+                                        <Button Content="7D"
+                                                Command="{Binding ShowWeekChartCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                    <Setter Property="Margin" Value="0,0,12,0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedChartDays}" Value="7">
+                                                            <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+
+                                        <Button Content="30D"
+                                                Command="{Binding ShowMonthChartCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedChartDays}" Value="30">
+                                                            <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2.1*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                            Style="{StaticResource PanelCardStyle}"
+                                            Margin="0,0,18,0">
+                                        <oxy:PlotView Model="{Binding PriceChartModel}"
+                                                      Background="Transparent"/>
+                                    </Border>
+
+                                    <Border Grid.Column="1"
+                                            Style="{StaticResource PanelCardSoftStyle}"
+                                            Padding="0">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Margin="24,24,24,16">
+                                                <TextBlock Text="History points"
+                                                           Style="{StaticResource SectionTitleTextStyle}"/>
+                                                <TextBlock Text="A compact list of the samples used to build the chart."
+                                                           Style="{StaticResource SectionSubtitleTextStyle}"
+                                                           Margin="0,6,0,0"/>
+                                            </StackPanel>
+
+                                            <DataGrid Grid.Row="1"
+                                                      ItemsSource="{Binding PriceHistory}"
+                                                      Style="{StaticResource DataGridStyle}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="Date"
+                                                                        Binding="{Binding Date, StringFormat={}{0:yyyy-MM-dd HH:mm}}"
+                                                                        Width="*"/>
+                                                    <DataGridTextColumn Header="Price"
+                                                                        Binding="{Binding Price, StringFormat={}{0:C4}}"
+                                                                        Width="120"/>
+                                                    <DataGridTextColumn Header="Volume"
+                                                                        Binding="{Binding Volume, StringFormat={}{0:N0}}"
+                                                                        Width="130"/>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Border>
                 </Grid>
-            </Border>
 
-            <!-- Vue Convertisseur (simplifié) -->
-            <Border Visibility="{Binding ShowConverter, Converter={StaticResource BoolToVisibilityConverter}}" 
-                    Margin="20" Background="White" CornerRadius="5" Padding="20">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Text="Currency Converter" Style="{StaticResource TitleTextStyle}"/>
-
-                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                <Border Grid.Row="2"
+                        Background="#F7FAFD"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="22"
+                        Padding="18,14"
+                        Margin="0,18,0,0">
+                    <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBox Grid.Column="0" Text="{Binding AmountToConvert, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,10,0"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedFromCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,10,0"/>
-                        <Button Grid.Column="2" Content="⇄" Command="{Binding SwapCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Width="45"/>
-                        <ComboBox Grid.Column="3" ItemsSource="{Binding FiatCurrencies}" SelectedItem="{Binding SelectedToCurrency}" DisplayMemberPath="Code" Style="{StaticResource ModernComboBoxStyle}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="CryptoTrack"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,14,0"/>
+                            <TextBlock Text="{Binding StatusMessage}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="Auto-refresh"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,10,0"
+                                       VerticalAlignment="Center"/>
+                            <CheckBox IsChecked="{Binding AutoRefreshEnabled}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
                     </Grid>
+                </Border>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="Convert" Command="{Binding ConvertCurrencyCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,12,0"/>
-                        <TextBlock VerticalAlignment="Center" Foreground="#5D6D7E">
-                            <Run Text="Rate: 1 "/><Run Text="{Binding SelectedFromCurrency.Code}"/><Run Text=" = "/>
-                            <Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <Border Grid.Row="3" Margin="0,15,0,0" Background="#F8FAFC" CornerRadius="5" Padding="16">
-                        <TextBlock FontSize="26" FontWeight="Bold" Foreground="#2C3E50">
-                            <Run Text="{Binding ConvertedAmount, StringFormat={}{0:N4}}"/><Run Text=" "/><Run Text="{Binding SelectedToCurrency.Code}"/>
-                        </TextBlock>
+                <Border Grid.RowSpan="3"
+                        Background="#70F8FBFE"
+                        Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Panel.ZIndex="40"
+                        CornerRadius="26">
+                    <Border Background="#F4FFFFFF"
+                            BorderBrush="#C8D6E5"
+                            BorderThickness="1"
+                            CornerRadius="24"
+                            Padding="26"
+                            Width="280"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <StackPanel>
+                            <TextBlock Text="Refreshing data"
+                                       Style="{StaticResource SectionTitleTextStyle}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Pulling the latest values and updating the dashboard."
+                                       Style="{StaticResource SectionSubtitleTextStyle}"
+                                       TextAlignment="Center"
+                                       Margin="0,8,0,16"/>
+                            <ProgressBar IsIndeterminate="True"
+                                         Style="{StaticResource ModernProgressBarStyle}"/>
+                        </StackPanel>
                     </Border>
-                </Grid>
-            </Border>
-
-            <!-- Vue Graphique -->
-            <Border Visibility="{Binding ShowChart, Converter={StaticResource BoolToVisibilityConverter}}" 
-                    Background="White" CornerRadius="5" Margin="20" Padding="20">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <Border Grid.Row="0" Background="#3498DB" CornerRadius="5" Padding="15" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Orientation="Vertical">
-                                <TextBlock Text="{Binding SelectedCrypto.Name, StringFormat={}{0} Price Chart}" Foreground="White" FontSize="18" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding SelectedCrypto.CurrentPrice, StringFormat=Current Price: {0:C2}}" Foreground="White" FontSize="14" Margin="0,5,0,0"/>
-                            </StackPanel>
-
-                            <Button Grid.Column="1" Content="← Back" Command="{Binding BackCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
-                        </Grid>
-                    </Border>
-
-                    <Border Grid.Row="1" BorderBrush="#ECF0F1" BorderThickness="1" CornerRadius="5" Padding="10">
-                        <DataGrid ItemsSource="{Binding PriceHistory}" Style="{StaticResource DataGridStyle}" AutoGenerateColumns="False">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*"/>
-                                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat={}{0:C4}}" Width="160"/>
-                                <DataGridTextColumn Header="Volume" Binding="{Binding Volume, StringFormat={}{0:N0}}" Width="200"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Border>
-
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <Button Content="1D" Command="{Binding ShowDayChartCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,5,0"/>
-                        <Button Content="7D" Command="{Binding ShowWeekChartCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="5,0"/>
-                        <Button Content="30D" Command="{Binding ShowMonthChartCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="5,0,0,0"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <!-- Barre d'état -->
-        <Border Grid.Row="2" Background="#34495E" Padding="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="CryptoTrackClient v2.0 - Crypto Portfolio Tracker" Foreground="#BDC3C7" FontSize="12" Margin="0,0,15,0"/>
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="#D6EAF8" FontSize="12"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBlock Text="Auto-refresh: " Foreground="#BDC3C7" FontSize="12" Margin="0,0,5,0"/>
-                    <CheckBox IsChecked="{Binding AutoRefreshEnabled}" VerticalAlignment="Center"/>
-                </StackPanel>
+                </Border>
             </Grid>
         </Border>
     </Grid>

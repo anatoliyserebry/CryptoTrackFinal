@@ -30,14 +30,20 @@ namespace CryptoTrackClient.Services
         private readonly Task _initializationTask;
         private readonly TimeSpan _initializationWaitTimeout = TimeSpan.FromSeconds(8);
 
-        private IApiClient _activeApiClient;
+        private IApiClient? _activeApiClient;
         private List<string> _favorites = new();
         private List<Transaction> _transactions = new();
 
-        public event Action DataUpdated;
-        public event Action PortfolioUpdated;
+        public event Action? DataUpdated;
+        public event Action? PortfolioUpdated;
 
         public string ActiveApiName => _activeApiClient?.ApiName ?? "None";
+        public bool AutoRefreshEnabled
+        {
+            get => _refreshTimer.Enabled;
+            set => _refreshTimer.Enabled = value;
+        }
+
         public List<string> AvailableApis => _apiClients.Select(c => c.ApiName).ToList();
 
         public CryptoService(
@@ -204,12 +210,13 @@ namespace CryptoTrackClient.Services
         private async Task LoadFiatCurrenciesAsync()
         {
             var loadedFromApi = false;
+            var activeApiClient = _activeApiClient;
 
             try
             {
-                if (_activeApiClient.SupportsFiatCurrencies)
+                if (activeApiClient != null && activeApiClient.SupportsFiatCurrencies)
                 {
-                    var currencies = await _activeApiClient.GetFiatCurrenciesAsync();
+                    var currencies = await activeApiClient.GetFiatCurrenciesAsync();
 
                     if (currencies != null && currencies.Count > 0)
                     {
@@ -520,10 +527,8 @@ namespace CryptoTrackClient.Services
             }
         }
 
-        public async Task<List<Transaction>> GetTransactionsAsync()
-        {
-            return _transactions.OrderByDescending(t => t.TransactionDate).ToList();
-        }
+        public Task<List<Transaction>> GetTransactionsAsync() =>
+            Task.FromResult(_transactions.OrderByDescending(t => t.TransactionDate).ToList());
 
         public async Task<PortfolioSummary> GetPortfolioSummaryAsync()
         {
@@ -560,7 +565,8 @@ namespace CryptoTrackClient.Services
                     {
                         CryptoId = transaction.CryptoId,
                         Symbol = transaction.CryptoSymbol,
-                        Name = transaction.CryptoName
+                        Name = transaction.CryptoName,
+                        Transactions = new List<Transaction>()
                     };
                     assets[transaction.CryptoId] = asset;
                 }
@@ -601,7 +607,20 @@ namespace CryptoTrackClient.Services
                 }
             }
 
-            return assets.Values.Where(a => a.Amount > 0).ToList();
+            var activeAssets = assets.Values
+                .Where(asset => asset.Amount > 0)
+                .OrderByDescending(asset => asset.CurrentValue)
+                .ToList();
+
+            var totalPortfolioValue = activeAssets.Sum(asset => asset.CurrentValue);
+            foreach (var asset in activeAssets)
+            {
+                asset.PercentageOfPortfolio = totalPortfolioValue > 0
+                    ? (asset.CurrentValue / totalPortfolioValue) * 100
+                    : 0;
+            }
+
+            return activeAssets;
         }
 
         public async Task<decimal> GetPortfolioValueAsync()
@@ -676,7 +695,7 @@ namespace CryptoTrackClient.Services
             try
             {
                 var directory = Path.GetDirectoryName(_portfolioFilePath);
-                if (!Directory.Exists(directory))
+                if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                 }
@@ -740,7 +759,7 @@ namespace CryptoTrackClient.Services
         #region Helper Classes
         private class PriceHistoryCache
         {
-            public List<PriceHistory> History { get; set; }
+            public List<PriceHistory> History { get; set; } = new();
             public DateTime ExpiryTime { get; set; }
         }
 

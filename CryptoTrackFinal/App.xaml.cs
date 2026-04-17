@@ -12,8 +12,8 @@ namespace CryptoTrackClient
 {
     public partial class App : Application
     {
-        public static IServiceProvider ServiceProvider { get; private set; }
-        public static IConfiguration Configuration { get; private set; }
+        public static IServiceProvider ServiceProvider { get; private set; } = default!;
+        public static IConfiguration Configuration { get; private set; } = default!;
 
         public App()
         {
@@ -87,7 +87,7 @@ namespace CryptoTrackClient
         }
 
         // Gestionnaires d'exceptions
-        private void App_DispatcherUnhandledException(object sender,
+        private void App_DispatcherUnhandledException(object? sender,
             System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             MessageBox.Show($"Erreur UI : {e.Exception.Message}", "Erreur",
@@ -95,14 +95,14 @@ namespace CryptoTrackClient
             e.Handled = true;
         }
 
-        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
         {
             var ex = e.ExceptionObject as Exception;
             MessageBox.Show($"Erreur non gérée : {ex?.Message}", "Erreur",
                             MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        private void TaskScheduler_UnobservedTaskException(object sender,
+        private void TaskScheduler_UnobservedTaskException(object? sender,
             System.Threading.Tasks.UnobservedTaskExceptionEventArgs e)
         {
             MessageBox.Show($"Erreur tâche : {e.Exception.Message}", "Erreur",

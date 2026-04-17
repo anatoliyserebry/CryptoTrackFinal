@@ -1,25 +1,31 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
-using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CryptoTrackClient.Models;
 using CryptoTrackClient.Services.Interfaces;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series;
 
 namespace CryptoTrackClient.ViewModels
 {
     public partial class MainViewModel : ObservableObject, IDisposable
     {
         private readonly ICryptoService _cryptoService;
-        private System.Timers.Timer? _autoRefreshTimer;
+        private readonly Dispatcher _dispatcher;
+        private readonly ObservableCollection<CryptoCurrency> _filteredCurrenciesInternal = new();
         private CancellationTokenSource? _conversionCts;
         private readonly List<CryptoCurrency> _allCurrencies = new();
-        private bool _showOnlyFavorites;
+
+        public ReadOnlyObservableCollection<CryptoCurrency> FilteredCurrencies { get; }
 
         [ObservableProperty]
         private ObservableCollection<CryptoCurrency> _cryptocurrencies = new();
@@ -40,13 +46,16 @@ namespace CryptoTrackClient.ViewModels
         private string _searchText = string.Empty;
 
         [ObservableProperty]
-        private bool _autoRefreshEnabled = true;
+        private bool _autoRefreshEnabled;
 
         [ObservableProperty]
-        private bool _showChart = false;
+        private bool _showChart;
 
         [ObservableProperty]
         private string _activeApi = "Loading...";
+
+        [ObservableProperty]
+        private string _selectedApi = string.Empty;
 
         [ObservableProperty]
         private ObservableCollection<string> _availableApis = new();
@@ -64,19 +73,25 @@ namespace CryptoTrackClient.ViewModels
         private decimal _portfolioProfitLossPercentage;
 
         [ObservableProperty]
-        private bool _showPortfolio = false;
+        private bool _showPortfolio;
 
         [ObservableProperty]
-        private bool _showConverter = false;
+        private bool _showConverter;
 
         [ObservableProperty]
         private bool _showMarket = true;
+
+        [ObservableProperty]
+        private bool _showOnlyFavorites;
 
         [ObservableProperty]
         private ObservableCollection<PriceHistory> _priceHistory = new();
 
         [ObservableProperty]
         private int _selectedChartDays = 7;
+
+        [ObservableProperty]
+        private PlotModel _priceChartModel = CreateEmptyChartModel();
 
         [ObservableProperty]
         private ObservableCollection<FiatCurrency> _fiatCurrencies = new();
@@ -117,18 +132,18 @@ namespace CryptoTrackClient.ViewModels
         [ObservableProperty]
         private string _portfolioTransactionExchange = "Manual";
 
-        public ObservableCollection<CryptoCurrency> FilteredCurrencies =>
-            new ObservableCollection<CryptoCurrency>((_showOnlyFavorites ? Favorites : Cryptocurrencies)
-                .Where(c => string.IsNullOrEmpty(SearchText) ||
-                           c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                           c.Symbol.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+        public int VisibleCurrencyCount => _filteredCurrenciesInternal.Count;
+        public int FavoriteCount => Favorites.Count;
+        public bool HasFilteredCurrencies => _filteredCurrenciesInternal.Count > 0;
+        public string MarketSummary => ShowOnlyFavorites
+            ? $"{VisibleCurrencyCount} favorite assets match your filters"
+            : $"{VisibleCurrencyCount} assets tracked in the current market feed";
 
         public ICommand RefreshCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand ShowChartCommand { get; }
         public ICommand ShowFavoritesCommand { get; }
         public ICommand ShowAllCommand { get; }
-        public ICommand ToggleAutoRefreshCommand { get; }
         public ICommand ShowDayChartCommand { get; }
         public ICommand ShowWeekChartCommand { get; }
         public ICommand ShowMonthChartCommand { get; }
@@ -144,57 +159,130 @@ namespace CryptoTrackClient.ViewModels
         public MainViewModel(ICryptoService cryptoService)
         {
             _cryptoService = cryptoService;
+            _dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            FilteredCurrencies = new ReadOnlyObservableCollection<CryptoCurrency>(_filteredCurrenciesInternal);
+            AutoRefreshEnabled = _cryptoService.AutoRefreshEnabled;
 
             RefreshCommand = new AsyncRelayCommand(RefreshDataAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand<string>(ToggleFavoriteAsync);
             ShowChartCommand = new AsyncRelayCommand<string>(ShowChartAsync);
             ShowFavoritesCommand = new RelayCommand(ShowFavorites);
             ShowAllCommand = new RelayCommand(ShowAll);
-            ToggleAutoRefreshCommand = new RelayCommand(ToggleAutoRefresh);
             ShowDayChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(1));
             ShowWeekChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(7));
             ShowMonthChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(30));
             BackCommand = new RelayCommand(Back);
-            SwitchApiCommand = new AsyncRelayCommand<string>(SwitchApiAsync);
-            ShowPortfolioCommand = new RelayCommand(() => ShowPortfolioSection());
-            ShowConverterCommand = new RelayCommand(() => ShowConverterSection());
-            ShowMarketCommand = new RelayCommand(() => ShowMarketSection());
+            SwitchApiCommand = new AsyncRelayCommand(SwitchApiAsync);
+            ShowPortfolioCommand = new RelayCommand(ShowPortfolioSection);
+            ShowConverterCommand = new RelayCommand(ShowConverterSection);
+            ShowMarketCommand = new RelayCommand(ShowMarketSection);
             ConvertCurrencyCommand = new AsyncRelayCommand(ConvertCurrencyAsync);
             SwapCurrencyCommand = new AsyncRelayCommand(SwapCurrenciesAsync);
             AddPortfolioTransactionCommand = new AsyncRelayCommand(AddPortfolioTransactionAsync);
 
-            SetupAutoRefresh();
-            _ = LoadDataAsync();
-            _ = LoadFiatCurrenciesAsync();
+            _cryptoService.DataUpdated += HandleDataUpdated;
+            _cryptoService.PortfolioUpdated += HandlePortfolioUpdated;
 
-            // Subscribe to events
-            _cryptoService.DataUpdated += async () => await OnDataUpdated();
-            _cryptoService.PortfolioUpdated += async () => await UpdatePortfolioInfo();
+            _ = InitializeAsync();
+        }
 
-            _ = UpdateApiInfo();
-            _ = UpdatePortfolioInfo();
-            _ = LoadPortfolioDetailsAsync();
+        private async Task InitializeAsync()
+        {
+            UpdateApiInfo();
+            await LoadDataAsync();
+            await LoadFiatCurrenciesAsync();
+            await UpdatePortfolioInfo();
+            await LoadPortfolioDetailsAsync();
+        }
+
+        private async void HandleDataUpdated()
+        {
+            try
+            {
+                await RunOnUiThreadAsync(async () =>
+                {
+                    UpdateApiInfo();
+                    await LoadDataAsync();
+
+                    if (FiatCurrencies.Count == 0)
+                    {
+                        await LoadFiatCurrenciesAsync();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _ = RunOnUiThreadAsync(() =>
+                {
+                    StatusMessage = $"Background refresh failed: {ex.Message}";
+                    return Task.CompletedTask;
+                });
+            }
+        }
+
+        private async void HandlePortfolioUpdated()
+        {
+            try
+            {
+                await RunOnUiThreadAsync(UpdatePortfolioInfo);
+            }
+            catch (Exception ex)
+            {
+                _ = RunOnUiThreadAsync(() =>
+                {
+                    StatusMessage = $"Portfolio refresh failed: {ex.Message}";
+                    return Task.CompletedTask;
+                });
+            }
+        }
+
+        private async Task RunOnUiThreadAsync(Func<Task> action)
+        {
+            if (_dispatcher.CheckAccess())
+            {
+                await action();
+                return;
+            }
+
+            await _dispatcher.InvokeAsync(action).Task.Unwrap();
         }
 
         private async Task LoadDataAsync()
         {
             IsLoading = true;
+
             try
             {
                 var data = await _cryptoService.GetCryptoCurrenciesAsync();
+                var favorites = await _cryptoService.GetFavoriteCurrenciesAsync();
+
                 _allCurrencies.Clear();
                 _allCurrencies.AddRange(data);
-                Cryptocurrencies = new ObservableCollection<CryptoCurrency>(data);
 
-                var favorites = await _cryptoService.GetFavoriteCurrenciesAsync();
+                Cryptocurrencies = new ObservableCollection<CryptoCurrency>(data);
                 Favorites = new ObservableCollection<CryptoCurrency>(favorites);
-                SelectedPortfolioCurrency ??= Cryptocurrencies.FirstOrDefault();
-                StatusMessage = $"Loaded {Cryptocurrencies.Count} assets ({DateTime.Now:T})";
-                OnPropertyChanged(nameof(FilteredCurrencies));
+
+                if (SelectedCrypto != null)
+                {
+                    SelectedCrypto = Cryptocurrencies.FirstOrDefault(currency => currency.Id == SelectedCrypto.Id);
+                }
+
+                var selectedPortfolioCurrencyId = SelectedPortfolioCurrency?.Id;
+                SelectedPortfolioCurrency = Cryptocurrencies.FirstOrDefault(currency => currency.Id == selectedPortfolioCurrencyId)
+                    ?? Cryptocurrencies.FirstOrDefault();
+
+                RefreshFilteredCurrencies();
+
+                StatusMessage = data.Count > 0
+                    ? $"Loaded {data.Count} assets at {DateTime.Now:T}"
+                    : "No market data available from the current provider.";
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Failed to load market data: {ex.Message}";
+                Cryptocurrencies = new ObservableCollection<CryptoCurrency>();
+                Favorites = new ObservableCollection<CryptoCurrency>();
+                RefreshFilteredCurrencies();
             }
             finally
             {
@@ -202,66 +290,109 @@ namespace CryptoTrackClient.ViewModels
             }
         }
 
-        private async Task RefreshDataAsync()
+        private void RefreshFilteredCurrencies()
         {
-            await _cryptoService.RefreshDataAsync();
-            StatusMessage = $"Data refreshed at {DateTime.Now:T}";
+            var source = ShowOnlyFavorites ? Favorites : Cryptocurrencies;
+            var filtered = source
+                .Where(currency => string.IsNullOrWhiteSpace(SearchText)
+                    || currency.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+                    || currency.Symbol.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(currency => currency.Rank ?? int.MaxValue)
+                .ThenBy(currency => currency.Name)
+                .ToList();
+
+            _filteredCurrenciesInternal.Clear();
+            foreach (var currency in filtered)
+            {
+                _filteredCurrenciesInternal.Add(currency);
+            }
+
+            OnPropertyChanged(nameof(VisibleCurrencyCount));
+            OnPropertyChanged(nameof(FavoriteCount));
+            OnPropertyChanged(nameof(HasFilteredCurrencies));
+            OnPropertyChanged(nameof(MarketSummary));
         }
 
-        private async Task ToggleFavoriteAsync(string cryptoId)
+        private async Task RefreshDataAsync()
         {
-            if (string.IsNullOrEmpty(cryptoId)) return;
+            try
+            {
+                IsLoading = true;
+                await _cryptoService.RefreshDataAsync();
+                StatusMessage = $"Data refreshed at {DateTime.Now:T}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Refresh failed: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task ToggleFavoriteAsync(string? cryptoId)
+        {
+            if (string.IsNullOrWhiteSpace(cryptoId))
+            {
+                return;
+            }
 
             await _cryptoService.ToggleFavoriteAsync(cryptoId);
             await LoadDataAsync();
         }
 
-        private async Task ShowChartAsync(string cryptoId)
+        private async Task ShowChartAsync(string? cryptoId)
         {
-            if (string.IsNullOrEmpty(cryptoId)) return;
-
-            SelectedCrypto = Cryptocurrencies.FirstOrDefault(c => c.Id == cryptoId);
-            if (SelectedCrypto != null)
+            if (string.IsNullOrWhiteSpace(cryptoId))
             {
-                ShowChart = true;
-                await LoadChartDataAsync(SelectedChartDays);
+                return;
             }
+
+            SelectedCrypto = Cryptocurrencies.FirstOrDefault(currency => currency.Id == cryptoId);
+            if (SelectedCrypto == null)
+            {
+                return;
+            }
+
+            ShowChart = true;
+            await LoadChartDataAsync(SelectedChartDays);
         }
 
         private void ShowFavorites()
         {
-            SearchText = string.Empty;
-            _showOnlyFavorites = true;
-            OnPropertyChanged(nameof(FilteredCurrencies));
+            ShowOnlyFavorites = true;
         }
 
         private void ShowAll()
         {
-            SearchText = string.Empty;
-            _showOnlyFavorites = false;
-            Cryptocurrencies = new ObservableCollection<CryptoCurrency>(_allCurrencies);
-            OnPropertyChanged(nameof(FilteredCurrencies));
-        }
-
-        private void ToggleAutoRefresh()
-        {
-            AutoRefreshEnabled = !AutoRefreshEnabled;
-            if (_autoRefreshTimer != null)
-            {
-                _autoRefreshTimer.Enabled = AutoRefreshEnabled;
-            }
+            ShowOnlyFavorites = false;
         }
 
         private async Task LoadChartDataAsync(int days)
         {
-            if (SelectedCrypto == null) return;
+            if (SelectedCrypto == null)
+            {
+                return;
+            }
 
             IsLoading = true;
+
             try
             {
-                var history = await _cryptoService.GetPriceHistoryAsync(SelectedCrypto.Id, days);
+                var history = (await _cryptoService.GetPriceHistoryAsync(SelectedCrypto.Id, days))
+                    .OrderBy(point => point.Date)
+                    .ToList();
+
                 PriceHistory = new ObservableCollection<PriceHistory>(history);
                 SelectedChartDays = days;
+                PriceChartModel = CreatePriceChartModel(history, SelectedCrypto.Name, days);
+            }
+            catch (Exception ex)
+            {
+                PriceHistory = new ObservableCollection<PriceHistory>();
+                PriceChartModel = CreateEmptyChartModel();
+                StatusMessage = $"Failed to load chart data: {ex.Message}";
             }
             finally
             {
@@ -274,18 +405,35 @@ namespace CryptoTrackClient.ViewModels
             ShowChart = false;
             SelectedCrypto = null;
             PriceHistory.Clear();
+            PriceChartModel = CreateEmptyChartModel();
         }
 
-        private async Task SwitchApiAsync(string apiName)
+        private async Task SwitchApiAsync()
         {
-            if (IsApiSwitching || string.IsNullOrEmpty(apiName)) return;
+            if (IsApiSwitching || string.IsNullOrWhiteSpace(SelectedApi))
+            {
+                return;
+            }
+
+            if (string.Equals(SelectedApi, _cryptoService.ActiveApiName, StringComparison.OrdinalIgnoreCase))
+            {
+                StatusMessage = $"{SelectedApi} is already active.";
+                return;
+            }
 
             IsApiSwitching = true;
+            StatusMessage = $"Switching market feed to {SelectedApi}...";
+
             try
             {
-                await _cryptoService.SwitchToApiAsync(apiName);
-                ActiveApi = apiName;
+                await _cryptoService.SwitchToApiAsync(SelectedApi);
+                UpdateApiInfo();
                 await LoadDataAsync();
+            }
+            catch (Exception ex)
+            {
+                SelectedApi = ActiveApi;
+                StatusMessage = $"Failed to switch API: {ex.Message}";
             }
             finally
             {
@@ -315,17 +463,6 @@ namespace CryptoTrackClient.ViewModels
             ShowMarket = true;
         }
 
-        private async Task OnDataUpdated()
-        {
-            await LoadDataAsync();
-            await UpdateApiInfo();
-
-            if (FiatCurrencies.Count == 0)
-            {
-                await LoadFiatCurrenciesAsync();
-            }
-        }
-
         private async Task UpdatePortfolioInfo()
         {
             try
@@ -338,14 +475,25 @@ namespace CryptoTrackClient.ViewModels
             }
             catch
             {
-                // Ignore errors
+                // Keep the last known portfolio summary when background refreshes fail.
             }
         }
 
-        private async Task UpdateApiInfo()
+        private void UpdateApiInfo()
         {
             ActiveApi = _cryptoService.ActiveApiName;
             AvailableApis = new ObservableCollection<string>(_cryptoService.AvailableApis);
+
+            if (AvailableApis.Count == 0)
+            {
+                SelectedApi = string.Empty;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(SelectedApi) || !AvailableApis.Contains(SelectedApi))
+            {
+                SelectedApi = ActiveApi;
+            }
         }
 
         private async Task LoadPortfolioDetailsAsync()
@@ -353,14 +501,14 @@ namespace CryptoTrackClient.ViewModels
             try
             {
                 var assets = await _cryptoService.GetPortfolioAssetsAsync();
-                PortfolioAssets = new ObservableCollection<PortfolioAsset>(assets);
+                PortfolioAssets = new ObservableCollection<PortfolioAsset>(assets.OrderByDescending(asset => asset.CurrentValue));
 
                 var transactions = await _cryptoService.GetTransactionsAsync();
-                PortfolioTransactions = new ObservableCollection<Transaction>(transactions.Take(20));
+                PortfolioTransactions = new ObservableCollection<Transaction>(transactions.Take(12));
             }
             catch
             {
-                // Ignore errors, summary header still provides status
+                // Ignore errors, summary cards still provide useful context.
             }
         }
 
@@ -368,14 +516,17 @@ namespace CryptoTrackClient.ViewModels
         {
             if (SelectedPortfolioCurrency == null || PortfolioTransactionAmount <= 0)
             {
-                StatusMessage = "Select a coin and enter an amount greater than 0.";
+                StatusMessage = "Select an asset and enter an amount greater than 0.";
                 return;
             }
 
-            var unitPrice = PortfolioTransactionPrice > 0 ? PortfolioTransactionPrice : SelectedPortfolioCurrency.CurrentPrice;
+            var unitPrice = PortfolioTransactionPrice > 0
+                ? PortfolioTransactionPrice
+                : SelectedPortfolioCurrency.CurrentPrice;
+
             if (unitPrice <= 0)
             {
-                StatusMessage = "Enter a valid purchase price.";
+                StatusMessage = "Enter a valid buy price.";
                 return;
             }
 
@@ -400,18 +551,7 @@ namespace CryptoTrackClient.ViewModels
             PortfolioTransactionPrice = SelectedPortfolioCurrency.CurrentPrice;
 
             await UpdatePortfolioInfo();
-            StatusMessage = $"Added {transaction.Amount} {transaction.CryptoSymbol} to portfolio.";
-        }
-
-        partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredCurrencies));
-        partial void OnCryptocurrenciesChanged(ObservableCollection<CryptoCurrency> value) => OnPropertyChanged(nameof(FilteredCurrencies));
-        partial void OnFavoritesChanged(ObservableCollection<CryptoCurrency> value) => OnPropertyChanged(nameof(FilteredCurrencies));
-        partial void OnActiveApiChanged(string value)
-        {
-            if (!string.IsNullOrWhiteSpace(value) && value != _cryptoService.ActiveApiName)
-            {
-                _ = SwitchApiAsync(value);
-            }
+            StatusMessage = $"Added {transaction.Amount} {transaction.CryptoSymbol} to the portfolio.";
         }
 
         private async Task LoadFiatCurrenciesAsync()
@@ -419,10 +559,13 @@ namespace CryptoTrackClient.ViewModels
             try
             {
                 var currencies = await _cryptoService.GetFiatCurrenciesAsync();
-                FiatCurrencies = new ObservableCollection<FiatCurrency>(currencies.OrderBy(c => c.Code));
+                FiatCurrencies = new ObservableCollection<FiatCurrency>(currencies.OrderBy(currency => currency.Code));
 
-                SelectedFromCurrency = FiatCurrencies.FirstOrDefault(f => f.Code == "USD") ?? FiatCurrencies.FirstOrDefault();
-                SelectedToCurrency = FiatCurrencies.FirstOrDefault(f => f.Code == "EUR") ?? FiatCurrencies.Skip(1).FirstOrDefault();
+                SelectedFromCurrency = FiatCurrencies.FirstOrDefault(currency => currency.Code == "USD")
+                    ?? FiatCurrencies.FirstOrDefault();
+                SelectedToCurrency = FiatCurrencies.FirstOrDefault(currency => currency.Code == "EUR")
+                    ?? FiatCurrencies.Skip(1).FirstOrDefault()
+                    ?? FiatCurrencies.FirstOrDefault();
 
                 await ConvertCurrencyAsync();
             }
@@ -448,17 +591,31 @@ namespace CryptoTrackClient.ViewModels
 
         private async Task SwapCurrenciesAsync()
         {
-            if (SelectedFromCurrency == null || SelectedToCurrency == null) return;
+            if (SelectedFromCurrency == null || SelectedToCurrency == null)
+            {
+                return;
+            }
 
-            var temp = SelectedFromCurrency;
-            SelectedFromCurrency = SelectedToCurrency;
-            SelectedToCurrency = temp;
+            (SelectedFromCurrency, SelectedToCurrency) = (SelectedToCurrency, SelectedFromCurrency);
             await ConvertCurrencyAsync();
         }
 
+        partial void OnSearchTextChanged(string value) => RefreshFilteredCurrencies();
+        partial void OnCryptocurrenciesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
+        partial void OnFavoritesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
+        partial void OnShowOnlyFavoritesChanged(bool value) => RefreshFilteredCurrencies();
+        partial void OnAutoRefreshEnabledChanged(bool value)
+        {
+            _cryptoService.AutoRefreshEnabled = value;
+            StatusMessage = value ? "Auto-refresh enabled." : "Auto-refresh paused.";
+        }
+
         partial void OnSelectedFromCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+
         partial void OnSelectedToCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+
         partial void OnAmountToConvertChanged(decimal value) => QueueCurrencyConversion();
+
         partial void OnSelectedPortfolioCurrencyChanged(CryptoCurrency? value)
         {
             if (value != null)
@@ -467,19 +624,12 @@ namespace CryptoTrackClient.ViewModels
             }
         }
 
-        private void SetupAutoRefresh()
-        {
-            _autoRefreshTimer = new System.Timers.Timer(30000); // 30 seconds
-            _autoRefreshTimer.Elapsed += async (s, e) => await RefreshDataAsync();
-            _autoRefreshTimer.AutoReset = true;
-            _autoRefreshTimer.Enabled = AutoRefreshEnabled;
-        }
-
         public void Dispose()
         {
+            _cryptoService.DataUpdated -= HandleDataUpdated;
+            _cryptoService.PortfolioUpdated -= HandlePortfolioUpdated;
             _conversionCts?.Cancel();
             _conversionCts?.Dispose();
-            _autoRefreshTimer?.Dispose();
         }
 
         private async void QueueCurrencyConversion()
@@ -493,14 +643,88 @@ namespace CryptoTrackClient.ViewModels
             try
             {
                 await Task.Delay(250, token);
-                if (token.IsCancellationRequested) return;
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
 
                 await ConvertCurrencyAsync();
             }
             catch (TaskCanceledException)
             {
-                // Ignore cancelled conversion requests.
+                // Ignore canceled conversion requests.
             }
         }
+
+        private static PlotModel CreateEmptyChartModel()
+        {
+            var model = CreateBaseChartModel();
+            model.Title = "Market trend";
+            model.Subtitle = "Select an asset to display its recent price movement.";
+            return model;
+        }
+
+        private static PlotModel CreatePriceChartModel(IReadOnlyList<PriceHistory> history, string assetName, int days)
+        {
+            if (history.Count == 0)
+            {
+                return CreateEmptyChartModel();
+            }
+
+            var model = CreateBaseChartModel();
+            model.Title = $"{assetName} price history";
+            model.Subtitle = days == 1 ? "Intraday view" : $"{days}-day trend";
+
+            model.Axes.Add(new DateTimeAxis
+            {
+                Position = AxisPosition.Bottom,
+                StringFormat = days == 1 ? "HH:mm" : "dd MMM",
+                TextColor = OxyColor.Parse("#5F728A"),
+                AxislineColor = OxyColor.Parse("#C8D6E5"),
+                TicklineColor = OxyColor.Parse("#C8D6E5"),
+                MajorGridlineStyle = LineStyle.Solid,
+                MajorGridlineColor = OxyColor.Parse("#E7EEF6"),
+                MinorGridlineStyle = LineStyle.None
+            });
+
+            model.Axes.Add(new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                TextColor = OxyColor.Parse("#5F728A"),
+                AxislineColor = OxyColor.Parse("#C8D6E5"),
+                TicklineColor = OxyColor.Parse("#C8D6E5"),
+                MajorGridlineStyle = LineStyle.Solid,
+                MajorGridlineColor = OxyColor.Parse("#E7EEF6"),
+                MinorGridlineStyle = LineStyle.None,
+                LabelFormatter = value => value.ToString("C2")
+            });
+
+            var lineSeries = new LineSeries
+            {
+                Color = OxyColor.Parse("#0F9D8A"),
+                StrokeThickness = 3,
+                MarkerType = MarkerType.None,
+                TrackerFormatString = "{2:dd MMM yyyy HH:mm}\nPrice: {4:C2}"
+            };
+
+            foreach (var point in history)
+            {
+                lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(point.Date), (double)point.Price));
+            }
+
+            model.Series.Add(lineSeries);
+            return model;
+        }
+
+        private static PlotModel CreateBaseChartModel() =>
+            new()
+            {
+                Background = OxyColors.Transparent,
+                PlotAreaBorderThickness = new OxyThickness(0),
+                TextColor = OxyColor.Parse("#5F728A"),
+                TitleColor = OxyColor.Parse("#112033"),
+                SubtitleColor = OxyColor.Parse("#5F728A"),
+                Padding = new OxyThickness(0)
+            };
     }
 }

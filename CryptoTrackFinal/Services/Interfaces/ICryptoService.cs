@@ -13,6 +13,7 @@ namespace CryptoTrackClient.Services.Interfaces
         event Action PortfolioUpdated;
 
         string ActiveApiName { get; }
+        bool AutoRefreshEnabled { get; set; }
         List<string> AvailableApis { get; }
 
         // Cryptocurrency methods
