@@ -350,29 +350,130 @@ namespace CryptoTrackClient.Services
                 return cache.History;
             }
 
-            // Request from API
-            foreach (var client in _apiClients)
+            var historyCandidates = BuildHistoryCandidates(cryptoId).ToList();
+            var clients = GetHistoryApiClients().ToList();
+
+            foreach (var client in clients)
             {
-                try
+                foreach (var candidate in historyCandidates)
                 {
-                    var history = await client.GetPriceHistoryAsync(cryptoId, days);
-
-                    // Save to cache for 5 minutes
-                    _priceHistoryCache[cacheKey] = new PriceHistoryCache
+                    try
                     {
-                        History = history,
-                        ExpiryTime = DateTime.Now.AddMinutes(5)
-                    };
+                        var history = await client.GetPriceHistoryAsync(candidate, days);
 
-                    return history;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to get price history for {CryptoId}", cryptoId);
+                        if (history == null || history.Count == 0)
+                        {
+                            _logger.LogDebug("No chart data returned by {ApiName} for {CandidateId}", client.ApiName, candidate);
+                            continue;
+                        }
+
+                        var normalizedHistory = history
+                            .Where(point => point != null)
+                            .OrderBy(point => point.Date)
+                            .ToList();
+
+                        if (normalizedHistory.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        // Save to cache for 5 minutes
+                        _priceHistoryCache[cacheKey] = new PriceHistoryCache
+                        {
+                            History = normalizedHistory,
+                            ExpiryTime = DateTime.Now.AddMinutes(5)
+                        };
+
+                        return normalizedHistory;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Failed to get price history for {CryptoId} using {CandidateId} from {ApiName}",
+                            cryptoId,
+                            candidate,
+                            client.ApiName);
+                    }
                 }
             }
 
-            return await GenerateMockHistoryAsync(cryptoId, days);
+            var fallbackHistory = await GenerateMockHistoryAsync(cryptoId, days);
+            _priceHistoryCache[cacheKey] = new PriceHistoryCache
+            {
+                History = fallbackHistory,
+                ExpiryTime = DateTime.Now.AddMinutes(5)
+            };
+
+            return fallbackHistory;
+        }
+
+        private IEnumerable<IApiClient> GetHistoryApiClients()
+        {
+            if (_activeApiClient != null)
+            {
+                yield return _activeApiClient;
+            }
+
+            foreach (var client in _apiClients)
+            {
+                if (client != _activeApiClient)
+                {
+                    yield return client;
+                }
+            }
+        }
+
+        private IEnumerable<string> BuildHistoryCandidates(string cryptoId)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var yieldReturnList = new List<string>();
+
+            void Add(string? candidate)
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    return;
+                }
+
+                var trimmed = candidate.Trim();
+                if (seen.Add(trimmed))
+                {
+                    yieldReturnList.Add(trimmed);
+                }
+            }
+
+            Add(cryptoId);
+
+            if (_cachedCurrencies.TryGetValue(cryptoId, out var cachedCurrency))
+            {
+                Add(cachedCurrency.Id);
+                Add(cachedCurrency.Symbol);
+                Add(cachedCurrency.Symbol?.ToLowerInvariant());
+                Add(ToSlug(cachedCurrency.Name));
+            }
+            else
+            {
+                Add(cryptoId.ToUpperInvariant());
+                Add(cryptoId.ToLowerInvariant());
+                Add(ToSlug(cryptoId.Replace('_', ' ').Replace('-', ' ')));
+            }
+
+            return yieldReturnList;
+        }
+
+        private static string ToSlug(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var parts = value
+                .Trim()
+                .ToLowerInvariant()
+                .Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+
+            return string.Join("-", parts);
         }
 
         private async Task<List<PriceHistory>> GenerateMockHistoryAsync(string cryptoId, int days)
