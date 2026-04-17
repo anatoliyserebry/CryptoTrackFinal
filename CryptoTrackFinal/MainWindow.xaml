@@ -219,9 +219,114 @@
                                         <StackPanel Grid.Column="0" Margin="0,0,18,0">
                                             <TextBlock Text="Search the market"
                                                        Style="{StaticResource LabelTextStyle}"/>
-                                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource ModernTextBoxStyle}"
-                                                     ToolTip="Search by name or symbol"/>
+                                            <Border BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="16"
+                                                    MinHeight="44">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource PanelAltBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=CryptoSearchBox}" Value="True">
+                                                                <Setter Property="Background" Value="White"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Path Grid.Column="0"
+                                                          Data="M 7 1 A 6 6 0 1 0 7 13 A 6 6 0 1 0 7 1 M 11.5 11.5 L 16 16"
+                                                          Stroke="{StaticResource TextMutedBrush}"
+                                                          StrokeThickness="1.6"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          Fill="Transparent"
+                                                          Width="18"
+                                                          Height="18"
+                                                          Stretch="Uniform"
+                                                          Margin="16,0,10,0"
+                                                          VerticalAlignment="Center"/>
+
+                                                    <Grid Grid.Column="1">
+                                                        <TextBox x:Name="CryptoSearchBox"
+                                                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="Transparent"
+                                                                 BorderThickness="0"
+                                                                 Padding="0,10"
+                                                                 FontSize="13"
+                                                                 Foreground="{StaticResource TextPrimaryBrush}"
+                                                                 CaretBrush="{StaticResource TextPrimaryBrush}"
+                                                                 VerticalContentAlignment="Center"
+                                                                 ToolTip="Search a cryptocurrency by name or symbol"/>
+                                                        <TextBlock Text="Search a cryptocurrency by name or symbol..."
+                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                   FontSize="13"
+                                                                   VerticalAlignment="Center"
+                                                                   Padding="2,0,0,0"
+                                                                   IsHitTestVisible="False">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Text, ElementName=CryptoSearchBox}" Value="">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Grid>
+
+                                                    <Button Grid.Column="2"
+                                                            Command="{Binding ClearSearchCommand}"
+                                                            ToolTip="Clear search"
+                                                            Margin="0,0,8,0"
+                                                            Width="28"
+                                                            Height="28"
+                                                            Cursor="Hand"
+                                                            VerticalAlignment="Center">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Setter Property="Background" Value="#E6EEF7"/>
+                                                                <Setter Property="BorderThickness" Value="0"/>
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border Background="{TemplateBinding Background}"
+                                                                                    CornerRadius="999">
+                                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                                                  VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasActiveSearch}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="Background" Value="#D6E1EC"/>
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                        <Path Data="M 0 0 L 8 8 M 8 0 L 0 8"
+                                                              Stroke="{StaticResource TextSecondaryBrush}"
+                                                              StrokeThickness="1.6"
+                                                              StrokeStartLineCap="Round"
+                                                              StrokeEndLineCap="Round"
+                                                              Width="8"
+                                                              Height="8"/>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="1" Margin="0,0,18,0">
@@ -450,10 +555,25 @@
                                                 <TextBlock Text="No assets match your current filters."
                                                            Style="{StaticResource SectionTitleTextStyle}"
                                                            HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Try another search or switch back to the full market view."
+                                                <TextBlock Text="Try another search term or switch back to the full market view."
                                                            Style="{StaticResource SectionSubtitleTextStyle}"
                                                            HorizontalAlignment="Center"
+                                                           TextAlignment="Center"
                                                            Margin="0,8,0,0"/>
+                                                <Button Content="Clear search"
+                                                        Command="{Binding ClearSearchCommand}"
+                                                        HorizontalAlignment="Center"
+                                                        Margin="0,16,0,0">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasActiveSearch}" Value="False">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
