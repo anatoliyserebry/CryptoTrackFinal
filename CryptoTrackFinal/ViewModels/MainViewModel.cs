@@ -135,9 +135,27 @@ namespace CryptoTrackClient.ViewModels
         public int VisibleCurrencyCount => _filteredCurrenciesInternal.Count;
         public int FavoriteCount => Favorites.Count;
         public bool HasFilteredCurrencies => _filteredCurrenciesInternal.Count > 0;
-        public string MarketSummary => ShowOnlyFavorites
-            ? $"{VisibleCurrencyCount} favorite assets match your filters"
-            : $"{VisibleCurrencyCount} assets tracked in the current market feed";
+        public bool HasActiveSearch => !string.IsNullOrWhiteSpace(SearchText);
+
+        public string MarketSummary
+        {
+            get
+            {
+                var total = ShowOnlyFavorites ? Favorites.Count : Cryptocurrencies.Count;
+
+                if (HasActiveSearch)
+                {
+                    var trimmed = SearchText.Trim();
+                    return ShowOnlyFavorites
+                        ? $"{VisibleCurrencyCount} of {total} favorites match \"{trimmed}\""
+                        : $"{VisibleCurrencyCount} of {total} assets match \"{trimmed}\"";
+                }
+
+                return ShowOnlyFavorites
+                    ? $"{VisibleCurrencyCount} favorite assets tracked"
+                    : $"{VisibleCurrencyCount} assets tracked in the current market feed";
+            }
+        }
 
         public ICommand RefreshCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
@@ -155,6 +173,7 @@ namespace CryptoTrackClient.ViewModels
         public ICommand ConvertCurrencyCommand { get; }
         public ICommand SwapCurrencyCommand { get; }
         public ICommand AddPortfolioTransactionCommand { get; }
+        public ICommand ClearSearchCommand { get; }
 
         public MainViewModel(ICryptoService cryptoService)
         {
@@ -179,6 +198,7 @@ namespace CryptoTrackClient.ViewModels
             ConvertCurrencyCommand = new AsyncRelayCommand(ConvertCurrencyAsync);
             SwapCurrencyCommand = new AsyncRelayCommand(SwapCurrenciesAsync);
             AddPortfolioTransactionCommand = new AsyncRelayCommand(AddPortfolioTransactionAsync);
+            ClearSearchCommand = new RelayCommand(ClearSearch);
 
             _cryptoService.DataUpdated += HandleDataUpdated;
             _cryptoService.PortfolioUpdated += HandlePortfolioUpdated;
@@ -310,6 +330,7 @@ namespace CryptoTrackClient.ViewModels
             OnPropertyChanged(nameof(VisibleCurrencyCount));
             OnPropertyChanged(nameof(FavoriteCount));
             OnPropertyChanged(nameof(HasFilteredCurrencies));
+            OnPropertyChanged(nameof(HasActiveSearch));
             OnPropertyChanged(nameof(MarketSummary));
         }
 
@@ -368,6 +389,8 @@ namespace CryptoTrackClient.ViewModels
         {
             ShowOnlyFavorites = false;
         }
+
+        private void ClearSearch() => SearchText = string.Empty;
 
         private async Task LoadChartDataAsync(int days)
         {
