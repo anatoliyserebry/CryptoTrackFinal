@@ -136,6 +136,13 @@ namespace CryptoTrackClient.ViewModels
         public int FavoriteCount => Favorites.Count;
         public bool HasFilteredCurrencies => _filteredCurrenciesInternal.Count > 0;
         public bool HasActiveSearch => !string.IsNullOrWhiteSpace(SearchText);
+        public string SelectedCryptoDisplayName => SelectedCrypto?.Name ?? "Selected asset";
+        public decimal SelectedCryptoDisplayPrice => SelectedCrypto?.CurrentPrice ?? 0m;
+        public decimal SelectedCryptoDisplayChange => SelectedCrypto?.PriceChangePercentage24h ?? 0m;
+        public string SelectedFromCurrencyCode => SelectedFromCurrency?.Code ?? "---";
+        public string SelectedFromCurrencyName => SelectedFromCurrency?.Name ?? "Select a source currency";
+        public string SelectedToCurrencyCode => SelectedToCurrency?.Code ?? "---";
+        public string SelectedToCurrencyName => SelectedToCurrency?.Name ?? "Select a target currency";
 
         public string MarketSummary
         {
@@ -627,15 +634,32 @@ namespace CryptoTrackClient.ViewModels
         partial void OnCryptocurrenciesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
         partial void OnFavoritesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
         partial void OnShowOnlyFavoritesChanged(bool value) => RefreshFilteredCurrencies();
+        partial void OnSelectedCryptoChanged(CryptoCurrency? value)
+        {
+            OnPropertyChanged(nameof(SelectedCryptoDisplayName));
+            OnPropertyChanged(nameof(SelectedCryptoDisplayPrice));
+            OnPropertyChanged(nameof(SelectedCryptoDisplayChange));
+        }
+
         partial void OnAutoRefreshEnabledChanged(bool value)
         {
             _cryptoService.AutoRefreshEnabled = value;
             StatusMessage = value ? "Auto-refresh enabled." : "Auto-refresh paused.";
         }
 
-        partial void OnSelectedFromCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+        partial void OnSelectedFromCurrencyChanged(FiatCurrency? value)
+        {
+            OnPropertyChanged(nameof(SelectedFromCurrencyCode));
+            OnPropertyChanged(nameof(SelectedFromCurrencyName));
+            QueueCurrencyConversion();
+        }
 
-        partial void OnSelectedToCurrencyChanged(FiatCurrency? value) => QueueCurrencyConversion();
+        partial void OnSelectedToCurrencyChanged(FiatCurrency? value)
+        {
+            OnPropertyChanged(nameof(SelectedToCurrencyCode));
+            OnPropertyChanged(nameof(SelectedToCurrencyName));
+            QueueCurrencyConversion();
+        }
 
         partial void OnAmountToConvertChanged(decimal value) => QueueCurrencyConversion();
 

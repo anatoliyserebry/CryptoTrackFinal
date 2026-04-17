@@ -956,7 +956,7 @@
                                                            Margin="0,8,0,0">
                                                     <Run Text="{Binding ConvertedAmount, StringFormat={}{0:N4}}"/>
                                                     <Run Text=" "/>
-                                                    <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                                    <Run Text="{Binding SelectedToCurrencyCode}"/>
                                                 </TextBlock>
                                             </StackPanel>
 
@@ -973,11 +973,11 @@
                                                 Margin="0,20,0,0">
                                         <TextBlock Style="{StaticResource SectionSubtitleTextStyle}">
                                             <Run Text="Rate: 1 "/>
-                                            <Run Text="{Binding SelectedFromCurrency.Code}"/>
+                                            <Run Text="{Binding SelectedFromCurrencyCode}"/>
                                             <Run Text=" = "/>
                                             <Run Text="{Binding ExchangeRate, StringFormat={}{0:F4}}"/>
                                             <Run Text=" "/>
-                                            <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                            <Run Text="{Binding SelectedToCurrencyCode}"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </Grid>
@@ -1005,9 +1005,9 @@
                                                        FontWeight="Bold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
                                                        Margin="0,8,0,0">
-                                                <Run Text="{Binding SelectedFromCurrency.Code}"/>
+                                                <Run Text="{Binding SelectedFromCurrencyCode}"/>
                                                 <Run Text=" / "/>
-                                                <Run Text="{Binding SelectedToCurrency.Code}"/>
+                                                <Run Text="{Binding SelectedToCurrencyCode}"/>
                                             </TextBlock>
                                         </StackPanel>
                                     </Border>
@@ -1021,7 +1021,7 @@
                                         <StackPanel>
                                             <TextBlock Text="From currency"
                                                        Style="{StaticResource MetricLabelTextStyle}"/>
-                                            <TextBlock Text="{Binding SelectedFromCurrency.Name}"
+                                            <TextBlock Text="{Binding SelectedFromCurrencyName}"
                                                        FontSize="20"
                                                        FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
@@ -1037,7 +1037,7 @@
                                         <StackPanel>
                                             <TextBlock Text="To currency"
                                                        Style="{StaticResource MetricLabelTextStyle}"/>
-                                            <TextBlock Text="{Binding SelectedToCurrency.Name}"
+                                            <TextBlock Text="{Binding SelectedToCurrencyName}"
                                                        FontSize="20"
                                                        FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
@@ -1071,15 +1071,15 @@
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel>
-                                            <TextBlock Text="{Binding SelectedCrypto.Name, StringFormat={}{0} price view}"
+                                            <TextBlock Text="{Binding SelectedCryptoDisplayName, StringFormat={}{0} price view}"
                                                        Style="{StaticResource SectionTitleTextStyle}"/>
                                             <TextBlock Style="{StaticResource SectionSubtitleTextStyle}"
                                                        Margin="0,6,0,0">
                                                 <Run Text="Current price: "/>
-                                                <Run Text="{Binding SelectedCrypto.CurrentPrice, StringFormat={}{0:C2}}"/>
+                                                <Run Text="{Binding SelectedCryptoDisplayPrice, StringFormat={}{0:C2}}"/>
                                                 <Run Text="   "/>
                                                 <Run Text="24h: "/>
-                                                <Run Text="{Binding SelectedCrypto.PriceChangePercentage24h, StringFormat={}{0:F2}%}"/>
+                                                <Run Text="{Binding SelectedCryptoDisplayChange, StringFormat={}{0:F2}%}"/>
                                             </TextBlock>
                                         </StackPanel>
 
