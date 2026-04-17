@@ -82,17 +82,21 @@ namespace CryptoTrackClient.Services.ApiClients
             {
                 var end = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 var start = DateTimeOffset.UtcNow.AddDays(-days).ToUnixTimeMilliseconds();
+                var interval = days <= 1 ? "h1" : days <= 7 ? "h6" : "d1";
 
                 var json = await GetStringWithRetryAsync(
-                    $"assets/{cryptoId}/history?interval=d1&start={start}&end={end}");
+                    $"assets/{cryptoId}/history?interval={interval}&start={start}&end={end}");
 
                 var data = JsonConvert.DeserializeObject<CoinCapHistoryResponse>(json);
 
-                return data.data.Select(h => new PriceHistory(
+                return data.data
+                    .Where(h => decimal.TryParse(h.priceUsd, out var price) && price > 0)
+                    .Select(h => new PriceHistory(
                     DateTime.Parse(h.date),
                     decimal.Parse(h.priceUsd),
                     decimal.Parse(h.volumeUsd ?? "0")
-                )).ToList();
+                ))
+                    .ToList();
             }
             catch (Exception ex)
             {

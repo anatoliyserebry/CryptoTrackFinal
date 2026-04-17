@@ -98,13 +98,7 @@ namespace CryptoTrackClient.Services
                     if (data != null && data.Count > 0)
                     {
                         _activeApiClient = client;
-                        foreach (var currency in data)
-                        {
-                            _cachedCurrencies.AddOrUpdate(
-                                currency.Id,
-                                currency,
-                                (_, _) => currency);
-                        }
+                        ReplaceCachedCurrencies(data);
 
                         _logger.LogInformation("Using {ApiName} API", client.ApiName);
                         DataUpdated?.Invoke();
@@ -163,14 +157,7 @@ namespace CryptoTrackClient.Services
             try
             {
                 var data = await _activeApiClient.GetTopCryptocurrenciesAsync(100);
-
-                foreach (var currency in data)
-                {
-                    _cachedCurrencies.AddOrUpdate(
-                        currency.Id,
-                        currency,
-                        (key, oldValue) => currency);
-                }
+                ReplaceCachedCurrencies(data);
 
                 DataUpdated?.Invoke();
                 _logger.LogInformation("Loaded {Count} currencies", data.Count);
@@ -205,6 +192,21 @@ namespace CryptoTrackClient.Services
         private void NotifyMarketDataUnavailable()
         {
             DataUpdated?.Invoke();
+        }
+
+        private void ReplaceCachedCurrencies(IEnumerable<CryptoCurrency> currencies)
+        {
+            _cachedCurrencies.Clear();
+
+            foreach (var currency in currencies)
+            {
+                if (string.IsNullOrWhiteSpace(currency.Id))
+                {
+                    continue;
+                }
+
+                _cachedCurrencies[currency.Id] = currency;
+            }
         }
 
         private async Task LoadFiatCurrenciesAsync()
@@ -369,6 +371,7 @@ namespace CryptoTrackClient.Services
 
                         var normalizedHistory = history
                             .Where(point => point != null)
+                            .Where(point => point.Price > 0)
                             .OrderBy(point => point.Date)
                             .ToList();
 

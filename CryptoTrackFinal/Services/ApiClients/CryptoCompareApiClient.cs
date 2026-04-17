@@ -87,19 +87,22 @@ namespace CryptoTrackClient.Services.ApiClients
         {
             try
             {
-                var limit = days <= 1 ? 24 : days;
-                var aggregate = days <= 1 ? 1 : 24;
+                var requestUri = days <= 1
+                    ? $"v2/histohour?fsym={cryptoId.ToUpper()}&tsym=USD&limit=24&aggregate=1"
+                    : $"v2/histoday?fsym={cryptoId.ToUpper()}&tsym=USD&limit={Math.Max(1, days)}&aggregate=1";
 
-                var json = await GetStringWithRetryAsync(
-                    $"v2/histoday?fsym={cryptoId.ToUpper()}&tsym=USD&limit={limit}&aggregate={aggregate}");
+                var json = await GetStringWithRetryAsync(requestUri);
 
                 var data = JsonConvert.DeserializeObject<CryptoCompareHistoryResponse>(json);
 
-                return data.Data.Data.Select(d => new PriceHistory(
+                return data.Data.Data
+                    .Where(d => d.close > 0)
+                    .Select(d => new PriceHistory(
                     DateTimeOffset.FromUnixTimeSeconds(d.time).DateTime,
                     d.close,
                     d.volumeto
-                )).ToList();
+                ))
+                    .ToList();
             }
             catch (Exception ex)
             {

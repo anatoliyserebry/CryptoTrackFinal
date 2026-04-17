@@ -291,12 +291,12 @@ namespace CryptoTrackClient.ViewModels
 
                 if (SelectedCrypto != null)
                 {
-                    SelectedCrypto = Cryptocurrencies.FirstOrDefault(currency => currency.Id == SelectedCrypto.Id);
+                    SelectedCrypto = FindMatchingCurrency(Cryptocurrencies, SelectedCrypto);
                 }
 
-                var selectedPortfolioCurrencyId = SelectedPortfolioCurrency?.Id;
-                SelectedPortfolioCurrency = Cryptocurrencies.FirstOrDefault(currency => currency.Id == selectedPortfolioCurrencyId)
-                    ?? Cryptocurrencies.FirstOrDefault();
+                SelectedPortfolioCurrency = SelectedPortfolioCurrency != null
+                    ? FindMatchingCurrency(Cryptocurrencies, SelectedPortfolioCurrency) ?? Cryptocurrencies.FirstOrDefault()
+                    : Cryptocurrencies.FirstOrDefault();
 
                 RefreshFilteredCurrencies();
 
@@ -339,6 +339,32 @@ namespace CryptoTrackClient.ViewModels
             OnPropertyChanged(nameof(HasFilteredCurrencies));
             OnPropertyChanged(nameof(HasActiveSearch));
             OnPropertyChanged(nameof(MarketSummary));
+        }
+
+        private static CryptoCurrency? FindMatchingCurrency(IEnumerable<CryptoCurrency> currencies, CryptoCurrency reference)
+        {
+            return currencies.FirstOrDefault(currency =>
+                       string.Equals(currency.Id, reference.Id, StringComparison.OrdinalIgnoreCase))
+                   ?? currencies.FirstOrDefault(currency =>
+                       !string.IsNullOrWhiteSpace(currency.Symbol)
+                       && string.Equals(currency.Symbol, reference.Symbol, StringComparison.OrdinalIgnoreCase))
+                   ?? currencies.FirstOrDefault(currency =>
+                       NormalizeAssetKey(currency.Name) == NormalizeAssetKey(reference.Name));
+        }
+
+        private static string NormalizeAssetKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var parts = value
+                .Trim()
+                .ToLowerInvariant()
+                .Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+
+            return string.Join("-", parts);
         }
 
         private async Task RefreshDataAsync()
