@@ -9,8 +9,8 @@
         Title="CryptoTrack"
         Height="860"
         Width="1380"
-        MinHeight="620"
-        MinWidth="920"
+        MinHeight="720"
+        MinWidth="1080"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBackgroundBrush}">
     <Grid>
@@ -22,12 +22,8 @@
             </LinearGradientBrush>
         </Grid.Background>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto"
-                      Padding="20">
-            <Border Style="{StaticResource ShellFrameStyle}"
-                    MinWidth="860">
-                <Grid>
+        <Border Margin="20" Style="{StaticResource ShellFrameStyle}">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -1113,23 +1109,6 @@
                                     <StackPanel Grid.Column="1"
                                                 Orientation="Horizontal"
                                                 VerticalAlignment="Center">
-                                        <Button Command="{Binding ToggleChartExpansionCommand}"
-                                                Margin="0,0,12,0">
-                                            <Button.Style>
-                                                <Style TargetType="Button" BasedOn="{StaticResource SurfaceButtonStyle}">
-                                                    <Setter Property="Content" Value="Expand chart"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsChartExpanded}" Value="True">
-                                                            <Setter Property="Content" Value="Reduce chart"/>
-                                                            <Setter Property="Background" Value="{StaticResource HighlightSoftBrush}"/>
-                                                            <Setter Property="BorderBrush" Value="{StaticResource HighlightBrush}"/>
-                                                            <Setter Property="Foreground" Value="{StaticResource HighlightBrush}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-
                                         <Button Content="1D"
                                                 Command="{Binding ShowDayChartCommand}">
                                             <Button.Style>
@@ -1188,18 +1167,6 @@
                                     <Border Grid.Column="0"
                                             Style="{StaticResource PanelCardStyle}"
                                             Margin="0,0,18,0">
-                                        <Border.Style>
-                                            <Style TargetType="Border" BasedOn="{StaticResource PanelCardStyle}">
-                                                <Setter Property="Margin" Value="0,0,18,0"/>
-                                                <Setter Property="Grid.ColumnSpan" Value="1"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsChartExpanded}" Value="True">
-                                                        <Setter Property="Grid.ColumnSpan" Value="2"/>
-                                                        <Setter Property="Margin" Value="0"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
                                         <oxy:PlotView Model="{Binding PriceChartModel}"
                                                       Background="Transparent"/>
                                     </Border>
@@ -1207,16 +1174,6 @@
                                     <Border Grid.Column="1"
                                             Style="{StaticResource PanelCardSoftStyle}"
                                             Padding="0">
-                                        <Border.Style>
-                                            <Style TargetType="Border" BasedOn="{StaticResource PanelCardSoftStyle}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsChartExpanded}" Value="True">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
@@ -1316,8 +1273,7 @@
                         </StackPanel>
                     </Border>
                 </Border>
-                </Grid>
-            </Border>
-        </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
