@@ -91,6 +91,9 @@ namespace CryptoTrackClient.ViewModels
         private int _selectedChartDays = 7;
 
         [ObservableProperty]
+        private bool _isChartExpanded;
+
+        [ObservableProperty]
         private PlotModel _priceChartModel = CreateEmptyChartModel();
 
         [ObservableProperty]
@@ -172,6 +175,7 @@ namespace CryptoTrackClient.ViewModels
         public ICommand ShowDayChartCommand { get; }
         public ICommand ShowWeekChartCommand { get; }
         public ICommand ShowMonthChartCommand { get; }
+        public ICommand ToggleChartExpansionCommand { get; }
         public ICommand BackCommand { get; }
         public ICommand SwitchApiCommand { get; }
         public ICommand ShowPortfolioCommand { get; }
@@ -197,6 +201,7 @@ namespace CryptoTrackClient.ViewModels
             ShowDayChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(1));
             ShowWeekChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(7));
             ShowMonthChartCommand = new AsyncRelayCommand(() => LoadChartDataAsync(30));
+            ToggleChartExpansionCommand = new RelayCommand(ToggleChartExpansion);
             BackCommand = new RelayCommand(Back);
             SwitchApiCommand = new AsyncRelayCommand(SwitchApiAsync);
             ShowPortfolioCommand = new RelayCommand(ShowPortfolioSection);
@@ -410,6 +415,7 @@ namespace CryptoTrackClient.ViewModels
             }
 
             ShowChart = true;
+            IsChartExpanded = false;
             await LoadChartDataAsync(SelectedChartDays);
         }
 
@@ -459,9 +465,15 @@ namespace CryptoTrackClient.ViewModels
         private void Back()
         {
             ShowChart = false;
+            IsChartExpanded = false;
             SelectedCrypto = null;
             PriceHistory.Clear();
             PriceChartModel = CreateEmptyChartModel();
+        }
+
+        private void ToggleChartExpansion()
+        {
+            IsChartExpanded = !IsChartExpanded;
         }
 
         private async Task SwitchApiAsync()
