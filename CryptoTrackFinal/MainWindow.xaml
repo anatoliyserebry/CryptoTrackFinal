@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="CryptoTrack"
         Height="860"
@@ -147,9 +148,9 @@
                                        TextTrimming="CharacterEllipsis"
                                        Margin="24,0"/>
 
-                            <UniformGrid Grid.Column="2"
-                                         Columns="3"
-                                         Rows="1">
+                            <primitives:UniformGrid Grid.Column="2"
+                                                    Columns="3"
+                                                    Rows="1">
                                 <Border Style="{StaticResource HeroMetricCardStyle}"
                                         Margin="0,0,12,0">
                                     <StackPanel>
@@ -190,7 +191,7 @@
                                                    Margin="0,8,0,0"/>
                                     </StackPanel>
                                 </Border>
-                            </UniformGrid>
+                            </primitives:UniformGrid>
                         </Grid>
                     </Grid>
                 </Border>
@@ -594,9 +595,9 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <UniformGrid Columns="3"
-                                         Rows="1"
-                                         Margin="0,0,0,18">
+                            <primitives:UniformGrid Columns="3"
+                                                    Rows="1"
+                                                    Margin="0,0,0,18">
                                 <Border Style="{StaticResource PanelCardStyle}"
                                         Margin="0,0,18,0">
                                     <StackPanel>
@@ -639,7 +640,7 @@
                                                    Margin="0,6,0,0"/>
                                     </StackPanel>
                                 </Border>
-                            </UniformGrid>
+                            </primitives:UniformGrid>
 
                             <Border Grid.Row="1"
                                     Style="{StaticResource PanelCardStyle}"
