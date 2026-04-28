@@ -66,8 +66,6 @@ namespace CryptoTrackClient
             services.Configure<CryptoServiceOptions>(Configuration.GetSection("CryptoService"));
 
             // API Clients
-            services.AddSingleton<IApiClient, MexcApiClient>();
-            services.AddSingleton<IApiClient, BybitApiClient>();
             services.AddSingleton<IApiClient, CoinGeckoApiClient>();
             services.AddSingleton<IApiClient, CoinCapApiClient>();
             services.AddSingleton<IApiClient, BinanceApiClient>();
