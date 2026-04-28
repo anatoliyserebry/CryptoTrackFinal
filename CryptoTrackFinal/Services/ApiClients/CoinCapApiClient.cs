@@ -39,7 +39,7 @@ namespace CryptoTrackClient.Services.ApiClients
                     PriceChangePercentage24h = decimal.Parse(a.changePercent24Hr),
                     Volume24h = decimal.Parse(a.volumeUsd24Hr),
                     Rank = int.Parse(a.rank),
-                    LastUpdated = DateTime.Parse(a.date)
+                    LastUpdated = ParseLastUpdated(a.date)
                 }).ToList();
             }
             catch (Exception ex)
@@ -67,7 +67,7 @@ namespace CryptoTrackClient.Services.ApiClients
                     PriceChangePercentage24h = decimal.Parse(asset.changePercent24Hr),
                     Volume24h = decimal.Parse(asset.volumeUsd24Hr),
                     Rank = int.Parse(asset.rank),
-                    LastUpdated = DateTime.Parse(asset.date)
+                    LastUpdated = ParseLastUpdated(asset.date)
                 };
             }
             catch (Exception ex)
@@ -161,6 +161,16 @@ namespace CryptoTrackClient.Services.ApiClients
             public string priceUsd { get; set; }
             public string volumeUsd { get; set; }
             public string date { get; set; }
+        }
+
+        private static DateTime ParseLastUpdated(string? value)
+        {
+            if (DateTime.TryParse(value, out var parsed))
+            {
+                return parsed;
+            }
+
+            return DateTime.UtcNow;
         }
         #endregion
     }

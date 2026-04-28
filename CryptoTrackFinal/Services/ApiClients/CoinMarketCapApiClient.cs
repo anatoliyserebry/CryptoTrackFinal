@@ -11,16 +11,20 @@ namespace CryptoTrackClient.Services.ApiClients
 
     public class CoinMarketCapApiClient : BaseApiClient
     {
-        private const string API_KEY = "YOUR_API_KEY"; // Get from coinmarketcap.com
+        private const string API_KEY = ""; // Get from coinmarketcap.com
         public override string ApiName => "CoinMarketCap";
         public override int Priority => 5;
         public override bool SupportsFiatCurrencies => true;
-        public override int RequestLimitPerMinute => string.IsNullOrEmpty(API_KEY) ? 10 : 333;
+        public override int RequestLimitPerMinute => HasApiKey ? 333 : 10;
+
+        private static bool HasApiKey =>
+            !string.IsNullOrWhiteSpace(API_KEY) &&
+            !string.Equals(API_KEY, "YOUR_API_KEY", StringComparison.OrdinalIgnoreCase);
 
         public CoinMarketCapApiClient()
             : base("https://pro-api.coinmarketcap.com/v1/", TimeSpan.FromSeconds(10))
         {
-            if (!string.IsNullOrEmpty(API_KEY))
+            if (HasApiKey)
             {
                 _httpClient.DefaultRequestHeaders.Add("X-CMC_PRO_API_KEY", API_KEY);
             }
