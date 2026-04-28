@@ -640,18 +640,9 @@ namespace CryptoTrackClient.ViewModels
                 return;
             }
 
-            try
-            {
-                var rate = await _cryptoService.ConvertCurrencyAsync(1m, SelectedFromCurrency.Code, SelectedToCurrency.Code);
-                ExchangeRate = rate;
-                ConvertedAmount = AmountToConvert * rate;
-            }
-            catch (Exception ex)
-            {
-                ExchangeRate = 0;
-                ConvertedAmount = 0;
-                StatusMessage = $"Currency conversion failed: {ex.Message}";
-            }
+            var rate = await _cryptoService.ConvertCurrencyAsync(1m, SelectedFromCurrency.Code, SelectedToCurrency.Code);
+            ExchangeRate = rate;
+            ConvertedAmount = AmountToConvert * rate;
         }
 
         private async Task SwapCurrenciesAsync()
@@ -735,10 +726,6 @@ namespace CryptoTrackClient.ViewModels
             catch (TaskCanceledException)
             {
                 // Ignore canceled conversion requests.
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Currency conversion failed: {ex.Message}";
             }
         }
 
