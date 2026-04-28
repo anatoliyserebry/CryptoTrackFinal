@@ -10,16 +10,20 @@ namespace CryptoTrackClient.Services.ApiClients
 {
     public class CryptoCompareApiClient : BaseApiClient
     {
-        private const string API_KEY = "YOUR_API_KEY"; // Get from cryptocompare.com
+        private const string API_KEY = ""; // Get from cryptocompare.com
         public override string ApiName => "CryptoCompare";
         public override int Priority => 4;
         public override bool SupportsFiatCurrencies => true;
-        public override int RequestLimitPerMinute => string.IsNullOrEmpty(API_KEY) ? 100 : 1000;
+        public override int RequestLimitPerMinute => HasApiKey ? 1000 : 100;
+
+        private static bool HasApiKey =>
+            !string.IsNullOrWhiteSpace(API_KEY) &&
+            !string.Equals(API_KEY, "YOUR_API_KEY", StringComparison.OrdinalIgnoreCase);
 
         public CryptoCompareApiClient()
             : base("https://min-api.cryptocompare.com/data/", TimeSpan.FromSeconds(10))
         {
-            if (!string.IsNullOrEmpty(API_KEY))
+            if (HasApiKey)
             {
                 _httpClient.DefaultRequestHeaders.Add("authorization", $"Apikey {API_KEY}");
             }
