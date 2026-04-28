@@ -171,22 +171,43 @@ namespace CryptoTrackClient.Services
 
         private async Task TryNextApiAsync()
         {
-            var nextClient = _apiClients
-                .Where(c => c != _activeApiClient)
-                .OrderBy(c => c.Priority)
-                .FirstOrDefault();
-
-            if (nextClient != null)
+            if (_apiClients.Count == 0)
             {
-                _activeApiClient = nextClient;
-                _logger.LogInformation("Switched to {ApiName} API", _activeApiClient.ApiName);
-                await LoadDataAsync();
-            }
-            else
-            {
-                _logger.LogWarning("All APIs failed, no live market data available");
+                _logger.LogWarning("No API clients registered.");
                 NotifyMarketDataUnavailable();
+                return;
             }
+
+            var orderedClients = _apiClients.OrderBy(c => c.Priority).ToList();
+            var currentIndex = _activeApiClient == null ? -1 : orderedClients.FindIndex(c => c == _activeApiClient);
+
+            for (var offset = 1; offset <= orderedClients.Count; offset++)
+            {
+                var candidate = orderedClients[(currentIndex + offset + orderedClients.Count) % orderedClients.Count];
+
+                try
+                {
+                    var data = await candidate.GetTopCryptocurrenciesAsync(100);
+                    if (data == null || data.Count == 0)
+                    {
+                        _logger.LogWarning("{ApiName} returned no market data while failing over", candidate.ApiName);
+                        continue;
+                    }
+
+                    _activeApiClient = candidate;
+                    ReplaceCachedCurrencies(data);
+                    _logger.LogInformation("Switched to {ApiName} API", _activeApiClient.ApiName);
+                    DataUpdated?.Invoke();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failover provider {ApiName} failed", candidate.ApiName);
+                }
+            }
+
+            _logger.LogWarning("All APIs failed, no live market data available");
+            NotifyMarketDataUnavailable();
         }
 
         private void NotifyMarketDataUnavailable()

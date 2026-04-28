@@ -19,7 +19,7 @@ namespace CryptoTrackClient.Services.ApiClients
         public override int RequestLimitPerMinute => 1200;
 
         public BinanceApiClient()
-            : base("https://api.binance.com/api/v3/", TimeSpan.FromSeconds(10))
+            : base("https://data-api.binance.vision/api/v3/", TimeSpan.FromSeconds(10))
         {
             _symbolMapping = new Dictionary<string, string>
             {
