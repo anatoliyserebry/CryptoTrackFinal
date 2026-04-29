@@ -13,7 +13,7 @@ namespace CryptoTrackClient.Services.ApiClients
         private readonly Dictionary<string, string> _symbolMapping;
 
         public override string ApiName => "Bybit";
-        public override int Priority => 2;
+        public override int Priority => 1;
         public override bool SupportsFiatCurrencies => false;
         public override int RequestLimitPerMinute => 600;
 

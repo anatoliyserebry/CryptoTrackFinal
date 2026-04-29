@@ -30,7 +30,7 @@ namespace CryptoTrackClient.Services.ApiClients
 
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "CryptoTrackClient/2.0");
 
-            // 🔧 CORRECTION : garantir que maxCount est au moins 1
+            // CORRECTION : garantir que maxCount est au moins 1
             int permitsPerSecond = Math.Max(1, RequestLimitPerMinute / 60);
             _rateLimiter = new SemaphoreSlim(permitsPerSecond, permitsPerSecond);
 
@@ -59,7 +59,7 @@ namespace CryptoTrackClient.Services.ApiClients
             }
             finally
             {
-                // 🔧 CORRECTION : délai minimum de 1 ms
+                // CORRECTION : délai minimum de 1 ms
                 int delayMs = Math.Max(1, 60000 / RequestLimitPerMinute);
                 _ = Task.Delay(delayMs).ContinueWith(_ => _rateLimiter.Release());
             }
