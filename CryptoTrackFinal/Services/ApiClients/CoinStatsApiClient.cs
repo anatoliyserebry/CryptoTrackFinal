@@ -25,7 +25,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"coins?limit={limit}");
-                var data = JsonConvert.DeserializeObject<CoinStatsResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinStatsResponse>(json) ?? new CoinStatsResponse();
 
                 return data.coins.Select(c => new CryptoCurrency
                 {
@@ -52,7 +52,8 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"coins/{id}");
-                var data = JsonConvert.DeserializeObject<CoinStatsCoinResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinStatsCoinResponse>(json)
+                    ?? throw new ApiException(ApiName, $"No CoinStats data returned for {id}");
 
                 var coin = data.coin;
                 return new CryptoCurrency
@@ -80,7 +81,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"charts?period={days}d&coinId={cryptoId}");
-                var data = JsonConvert.DeserializeObject<CoinStatsChartResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinStatsChartResponse>(json) ?? new CoinStatsChartResponse();
 
                 return data.chart.Select(c => new PriceHistory(
                     DateTimeOffset.FromUnixTimeMilliseconds((long)c[0]).DateTime,
@@ -98,7 +99,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("fiats");
-                var data = JsonConvert.DeserializeObject<CoinStatsFiatsResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinStatsFiatsResponse>(json) ?? new CoinStatsFiatsResponse();
 
                 return data.fiats.Select(f => new FiatCurrency
                 {
@@ -155,19 +156,19 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class CoinStatsResponse
         {
-            public List<CoinStatsCoin> coins { get; set; }
+            public List<CoinStatsCoin> coins { get; set; } = new();
         }
 
         private class CoinStatsCoinResponse
         {
-            public CoinStatsCoin coin { get; set; }
+            public CoinStatsCoin coin { get; set; } = new();
         }
 
         private class CoinStatsCoin
         {
-            public string id { get; set; }
-            public string name { get; set; }
-            public string symbol { get; set; }
+            public string id { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
+            public string symbol { get; set; } = string.Empty;
             public decimal price { get; set; }
             public decimal marketCap { get; set; }
             public decimal priceChange { get; set; }
@@ -178,18 +179,18 @@ namespace CryptoTrackClient.Services.ApiClients
 
         private class CoinStatsChartResponse
         {
-            public List<List<decimal>> chart { get; set; }
+            public List<List<decimal>> chart { get; set; } = new();
         }
 
         private class CoinStatsFiatsResponse
         {
-            public List<CoinStatsFiat> fiats { get; set; }
+            public List<CoinStatsFiat> fiats { get; set; } = new();
         }
 
         private class CoinStatsFiat
         {
-            public string symbol { get; set; }
-            public string name { get; set; }
+            public string symbol { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
             public decimal rate { get; set; }
         }
         #endregion

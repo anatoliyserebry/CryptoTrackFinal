@@ -85,6 +85,12 @@ namespace CryptoTrackClient.ViewModels
         private bool _showOnlyFavorites;
 
         [ObservableProperty]
+        private bool _isMarketDataExpanded;
+
+        [ObservableProperty]
+        private bool _isChartExpanded;
+
+        [ObservableProperty]
         private ObservableCollection<PriceHistory> _priceHistory = new();
 
         [ObservableProperty]
@@ -143,6 +149,8 @@ namespace CryptoTrackClient.ViewModels
         public string SelectedFromCurrencyName => SelectedFromCurrency?.Name ?? "Select a source currency";
         public string SelectedToCurrencyCode => SelectedToCurrency?.Code ?? "---";
         public string SelectedToCurrencyName => SelectedToCurrency?.Name ?? "Select a target currency";
+        public string MarketDataSizeButtonText => IsMarketDataExpanded ? "Shrink" : "Expand";
+        public string ChartSizeButtonText => IsChartExpanded ? "Shrink" : "Expand";
 
         public string MarketSummary
         {
@@ -181,6 +189,8 @@ namespace CryptoTrackClient.ViewModels
         public ICommand SwapCurrencyCommand { get; }
         public ICommand AddPortfolioTransactionCommand { get; }
         public ICommand ClearSearchCommand { get; }
+        public ICommand ToggleMarketDataSizeCommand { get; }
+        public ICommand ToggleChartSizeCommand { get; }
 
         public MainViewModel(ICryptoService cryptoService)
         {
@@ -206,6 +216,8 @@ namespace CryptoTrackClient.ViewModels
             SwapCurrencyCommand = new AsyncRelayCommand(SwapCurrenciesAsync);
             AddPortfolioTransactionCommand = new AsyncRelayCommand(AddPortfolioTransactionAsync);
             ClearSearchCommand = new RelayCommand(ClearSearch);
+            ToggleMarketDataSizeCommand = new RelayCommand(ToggleMarketDataSize);
+            ToggleChartSizeCommand = new RelayCommand(ToggleChartSize);
 
             _cryptoService.DataUpdated += HandleDataUpdated;
             _cryptoService.PortfolioUpdated += HandlePortfolioUpdated;
@@ -409,6 +421,7 @@ namespace CryptoTrackClient.ViewModels
                 return;
             }
 
+            IsMarketDataExpanded = false;
             ShowChart = true;
             await LoadChartDataAsync(SelectedChartDays);
         }
@@ -458,6 +471,12 @@ namespace CryptoTrackClient.ViewModels
 
         private void Back()
         {
+            IsChartExpanded = false;
+            CloseChartView();
+        }
+
+        private void CloseChartView()
+        {
             ShowChart = false;
             SelectedCrypto = null;
             PriceHistory.Clear();
@@ -499,6 +518,8 @@ namespace CryptoTrackClient.ViewModels
 
         private void ShowPortfolioSection()
         {
+            CloseExpandedPanels();
+            CloseChartView();
             ShowMarket = false;
             ShowConverter = false;
             ShowPortfolio = true;
@@ -507,6 +528,8 @@ namespace CryptoTrackClient.ViewModels
 
         private void ShowConverterSection()
         {
+            CloseExpandedPanels();
+            CloseChartView();
             ShowMarket = false;
             ShowPortfolio = false;
             ShowConverter = true;
@@ -514,9 +537,37 @@ namespace CryptoTrackClient.ViewModels
 
         private void ShowMarketSection()
         {
+            IsChartExpanded = false;
+            CloseChartView();
             ShowPortfolio = false;
             ShowConverter = false;
             ShowMarket = true;
+        }
+
+        private void ToggleMarketDataSize()
+        {
+            IsMarketDataExpanded = !IsMarketDataExpanded;
+
+            if (IsMarketDataExpanded)
+            {
+                IsChartExpanded = false;
+            }
+        }
+
+        private void ToggleChartSize()
+        {
+            IsChartExpanded = !IsChartExpanded;
+
+            if (IsChartExpanded)
+            {
+                IsMarketDataExpanded = false;
+            }
+        }
+
+        private void CloseExpandedPanels()
+        {
+            IsMarketDataExpanded = false;
+            IsChartExpanded = false;
         }
 
         private async Task UpdatePortfolioInfo()
@@ -660,6 +711,8 @@ namespace CryptoTrackClient.ViewModels
         partial void OnCryptocurrenciesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
         partial void OnFavoritesChanged(ObservableCollection<CryptoCurrency> value) => RefreshFilteredCurrencies();
         partial void OnShowOnlyFavoritesChanged(bool value) => RefreshFilteredCurrencies();
+        partial void OnIsMarketDataExpandedChanged(bool value) => OnPropertyChanged(nameof(MarketDataSizeButtonText));
+        partial void OnIsChartExpandedChanged(bool value) => OnPropertyChanged(nameof(ChartSizeButtonText));
         partial void OnSelectedCryptoChanged(CryptoCurrency? value)
         {
             OnPropertyChanged(nameof(SelectedCryptoDisplayName));

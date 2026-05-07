@@ -35,7 +35,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"cryptocurrency/listings/latest?limit={limit}");
-                var data = JsonConvert.DeserializeObject<CMCResponse>(json);
+                var data = JsonConvert.DeserializeObject<CMCResponse>(json) ?? new CMCResponse();
 
                 return data.data.Select(c => new CryptoCurrency
                 {
@@ -64,9 +64,10 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"cryptocurrency/quotes/latest?symbol={id}");
-                var data = JsonConvert.DeserializeObject<CMCSingleResponse>(json);
+                var data = JsonConvert.DeserializeObject<CMCSingleResponse>(json) ?? new CMCSingleResponse();
 
-                var crypto = data.data.First().Value;
+                var crypto = data.data.Values.FirstOrDefault()
+                    ?? throw new ApiException(ApiName, $"No CoinMarketCap data returned for {id}");
                 return new CryptoCurrency
                 {
                     Id = crypto.symbol.ToLower(),
@@ -96,7 +97,7 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"cryptocurrency/quotes/historical?symbol={cryptoId}&count={days}&interval=daily");
 
-                var data = JsonConvert.DeserializeObject<CMCHistoryResponse>(json);
+                var data = JsonConvert.DeserializeObject<CMCHistoryResponse>(json) ?? new CMCHistoryResponse();
 
                 return data.data.quotes.Select(q => new PriceHistory(
                     q.timestamp,
@@ -115,7 +116,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("fiat/map");
-                var data = JsonConvert.DeserializeObject<CMCFiatResponse>(json);
+                var data = JsonConvert.DeserializeObject<CMCFiatResponse>(json) ?? new CMCFiatResponse();
 
                 var result = new List<FiatCurrency>();
                 foreach (var f in data.data.Take(20))
@@ -146,9 +147,9 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"tools/price-conversion?amount=1&symbol={fromCurrency}&convert={toCurrency}");
 
-                var data = JsonConvert.DeserializeObject<CMCConversionResponse>(json);
+                var data = JsonConvert.DeserializeObject<CMCConversionResponse>(json) ?? new CMCConversionResponse();
 
-                return data.data.quote[toCurrency].price;
+                return data.data.quote.TryGetValue(toCurrency, out var quote) ? quote.price : 1m;
             }
             catch
             {
@@ -172,44 +173,44 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class CMCResponse
         {
-            public List<CMCData> data { get; set; }
+            public List<CMCData> data { get; set; } = new();
         }
 
         private class CMCSingleResponse
         {
-            public Dictionary<string, CMCData> data { get; set; }
+            public Dictionary<string, CMCData> data { get; set; } = new();
         }
 
         private class CMCHistoryResponse
         {
-            public CMCData data { get; set; }
+            public CMCData data { get; set; } = new();
         }
 
         private class CMCFiatResponse
         {
-            public List<CMCFiat> data { get; set; }
+            public List<CMCFiat> data { get; set; } = new();
         }
 
         private class CMCConversionResponse
         {
-            public CMCConversionData data { get; set; }
+            public CMCConversionData data { get; set; } = new();
         }
 
         private class CMCData
         {
             public int id { get; set; }
-            public string name { get; set; }
-            public string symbol { get; set; }
+            public string name { get; set; } = string.Empty;
+            public string symbol { get; set; } = string.Empty;
             public int cmc_rank { get; set; }
             public decimal? circulating_supply { get; set; }
             public decimal? total_supply { get; set; }
-            public CMCQuote quote { get; set; }
-            public List<CMCHistoryQuote> quotes { get; set; }
+            public CMCQuote quote { get; set; } = new();
+            public List<CMCHistoryQuote> quotes { get; set; } = new();
         }
 
         private class CMCQuote
         {
-            public CMCUSD USD { get; set; }
+            public CMCUSD USD { get; set; } = new();
         }
 
         private class CMCUSD
@@ -224,19 +225,19 @@ namespace CryptoTrackClient.Services.ApiClients
         private class CMCHistoryQuote
         {
             public DateTime timestamp { get; set; }
-            public CMCQuote quote { get; set; }
+            public CMCQuote quote { get; set; } = new();
         }
 
         private class CMCFiat
         {
-            public string symbol { get; set; }
-            public string name { get; set; }
-            public string sign { get; set; }
+            public string symbol { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
+            public string? sign { get; set; }
         }
 
         private class CMCConversionData
         {
-            public Dictionary<string, CMCConversionQuote> quote { get; set; }
+            public Dictionary<string, CMCConversionQuote> quote { get; set; } = new();
         }
 
         private class CMCConversionQuote

@@ -26,7 +26,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"assets?limit={limit}");
-                var data = JsonConvert.DeserializeObject<CoinCapResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinCapResponse>(json) ?? new CoinCapResponse();
 
                 return data.data.Select(a => new CryptoCurrency
                 {
@@ -53,7 +53,8 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"assets/{id}");
-                var data = JsonConvert.DeserializeObject<CoinCapAssetResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinCapAssetResponse>(json)
+                    ?? throw new ApiException(ApiName, $"No CoinCap data returned for {id}");
 
                 var asset = data.data;
                 return new CryptoCurrency
@@ -87,7 +88,7 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"assets/{cryptoId}/history?interval={interval}&start={start}&end={end}");
 
-                var data = JsonConvert.DeserializeObject<CoinCapHistoryResponse>(json);
+                var data = JsonConvert.DeserializeObject<CoinCapHistoryResponse>(json) ?? new CoinCapHistoryResponse();
 
                 return data.data
                     .Where(h => decimal.TryParse(h.priceUsd, out var price) && price > 0)
@@ -130,37 +131,37 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class CoinCapResponse
         {
-            public List<CoinCapAsset> data { get; set; }
+            public List<CoinCapAsset> data { get; set; } = new();
         }
 
         private class CoinCapAssetResponse
         {
-            public CoinCapAsset data { get; set; }
+            public CoinCapAsset data { get; set; } = new();
         }
 
         private class CoinCapHistoryResponse
         {
-            public List<CoinCapHistory> data { get; set; }
+            public List<CoinCapHistory> data { get; set; } = new();
         }
 
         private class CoinCapAsset
         {
-            public string id { get; set; }
-            public string rank { get; set; }
-            public string symbol { get; set; }
-            public string name { get; set; }
-            public string priceUsd { get; set; }
-            public string marketCapUsd { get; set; }
-            public string volumeUsd24Hr { get; set; }
-            public string changePercent24Hr { get; set; }
-            public string date { get; set; }
+            public string id { get; set; } = string.Empty;
+            public string rank { get; set; } = "0";
+            public string symbol { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
+            public string priceUsd { get; set; } = "0";
+            public string marketCapUsd { get; set; } = "0";
+            public string volumeUsd24Hr { get; set; } = "0";
+            public string changePercent24Hr { get; set; } = "0";
+            public string date { get; set; } = string.Empty;
         }
 
         private class CoinCapHistory
         {
-            public string priceUsd { get; set; }
-            public string volumeUsd { get; set; }
-            public string date { get; set; }
+            public string priceUsd { get; set; } = "0";
+            public string? volumeUsd { get; set; }
+            public string date { get; set; } = string.Empty;
         }
 
         private static DateTime ParseLastUpdated(string? value)

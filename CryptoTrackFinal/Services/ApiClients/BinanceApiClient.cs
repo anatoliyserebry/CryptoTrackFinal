@@ -47,7 +47,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("ticker/24hr");
-                var tickers = JsonConvert.DeserializeObject<List<BinanceTicker>>(json);
+                var tickers = JsonConvert.DeserializeObject<List<BinanceTicker>>(json) ?? new List<BinanceTicker>();
 
                 // Filter only USDT pairs and take top by volume
                 var usdtTickers = tickers
@@ -88,7 +88,8 @@ namespace CryptoTrackClient.Services.ApiClients
             {
                 var symbol = GetSymbol(id);
                 var json = await GetStringWithRetryAsync($"ticker/24hr?symbol={symbol}");
-                var ticker = JsonConvert.DeserializeObject<BinanceTicker>(json);
+                var ticker = JsonConvert.DeserializeObject<BinanceTicker>(json)
+                    ?? throw new ApiException(ApiName, $"No Binance data returned for {id}");
 
                 return new CryptoCurrency
                 {
@@ -119,12 +120,14 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"klines?symbol={symbol}&interval={interval}&limit={limit}");
 
-                var klines = JsonConvert.DeserializeObject<List<List<object>>>(json);
+                var klines = JsonConvert.DeserializeObject<List<List<object>>>(json) ?? new List<List<object>>();
 
-                return klines.Select(k => new PriceHistory(
+                return klines
+                    .Where(k => k.Count > 5)
+                    .Select(k => new PriceHistory(
                     DateTimeOffset.FromUnixTimeMilliseconds((long)k[0]).DateTime,
-                    decimal.Parse(k[4].ToString()),
-                    decimal.Parse(k[5].ToString())
+                    decimal.Parse(Convert.ToString(k[4]) ?? "0"),
+                    decimal.Parse(Convert.ToString(k[5]) ?? "0")
                 )).ToList();
             }
             catch (Exception ex)
@@ -240,11 +243,11 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class BinanceTicker
         {
-            public string symbol { get; set; }
-            public string priceChange { get; set; }
-            public string priceChangePercent { get; set; }
-            public string lastPrice { get; set; }
-            public string volume { get; set; }
+            public string symbol { get; set; } = string.Empty;
+            public string priceChange { get; set; } = string.Empty;
+            public string priceChangePercent { get; set; } = string.Empty;
+            public string lastPrice { get; set; } = string.Empty;
+            public string volume { get; set; } = string.Empty;
         }
         #endregion
     }
