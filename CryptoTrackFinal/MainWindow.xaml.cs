@@ -39,7 +39,8 @@ namespace CryptoTrackClient
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName is nameof(MainViewModel.IsMarketDataExpanded)
-                or nameof(MainViewModel.IsChartExpanded))
+                or nameof(MainViewModel.IsChartExpanded)
+                or nameof(MainViewModel.IsPortfolioDataExpanded))
             {
                 if (Dispatcher.CheckAccess())
                 {
@@ -60,7 +61,8 @@ namespace CryptoTrackClient
             var viewModel = DataContext as MainViewModel;
             var marketExpanded = viewModel?.IsMarketDataExpanded == true;
             var chartExpanded = viewModel?.IsChartExpanded == true;
-            var expanded = marketExpanded || chartExpanded;
+            var portfolioExpanded = viewModel?.IsPortfolioDataExpanded == true;
+            var expanded = marketExpanded || chartExpanded || portfolioExpanded;
 
             ShellFrame.Margin = expanded
                 ? new Thickness(10)
@@ -88,6 +90,7 @@ namespace CryptoTrackClient
 
             ApplyMarketLayout(narrow, marketExpanded);
             ApplyChartLayout(narrow, chartExpanded);
+            ApplyPortfolioLayout(narrow, portfolioExpanded);
         }
 
         private void ApplyMarketLayout(bool narrow, bool marketExpanded)
@@ -201,6 +204,135 @@ namespace CryptoTrackClient
             ChartHistoryCard.Margin = new Thickness(0);
             ChartHistoryCard.MaxHeight = double.PositiveInfinity;
             ChartContentGrid.RowDefinitions[1].Height = GridLength.Auto;
+        }
+
+        private void ApplyPortfolioLayout(bool narrow, bool portfolioExpanded)
+        {
+            PortfolioSummaryGrid.Visibility = portfolioExpanded ? Visibility.Collapsed : Visibility.Visible;
+            PortfolioTransactionCard.Visibility = portfolioExpanded ? Visibility.Collapsed : Visibility.Visible;
+            PortfolioActivityCard.Visibility = portfolioExpanded ? Visibility.Collapsed : Visibility.Visible;
+
+            if (portfolioExpanded)
+            {
+                Grid.SetRow(PortfolioHoldingsCard, 0);
+                Grid.SetColumn(PortfolioHoldingsCard, 0);
+                Grid.SetColumnSpan(PortfolioHoldingsCard, 2);
+                PortfolioHoldingsCard.Margin = new Thickness(0);
+                PortfolioContentGrid.RowDefinitions[1].Height = GridLength.Auto;
+                return;
+            }
+
+            PortfolioSummaryGrid.Columns = narrow ? 1 : 3;
+            PortfolioSummaryGrid.Rows = narrow ? 3 : 1;
+
+            for (var i = 0; i < PortfolioSummaryGrid.Children.Count; i++)
+            {
+                if (PortfolioSummaryGrid.Children[i] is FrameworkElement child)
+                {
+                    child.Margin = narrow
+                        ? new Thickness(0, 0, 0, i == PortfolioSummaryGrid.Children.Count - 1 ? 0 : 12)
+                        : new Thickness(0, 0, i == PortfolioSummaryGrid.Children.Count - 1 ? 0 : 18, 0);
+                }
+            }
+
+            ApplyPortfolioFormLayout(narrow);
+
+            if (narrow)
+            {
+                Grid.SetRow(PortfolioHoldingsCard, 0);
+                Grid.SetColumn(PortfolioHoldingsCard, 0);
+                Grid.SetColumnSpan(PortfolioHoldingsCard, 2);
+                PortfolioHoldingsCard.Margin = new Thickness(0, 0, 0, 12);
+
+                Grid.SetRow(PortfolioActivityCard, 1);
+                Grid.SetColumn(PortfolioActivityCard, 0);
+                Grid.SetColumnSpan(PortfolioActivityCard, 2);
+                PortfolioActivityCard.Margin = new Thickness(0);
+                PortfolioActivityCard.MaxHeight = 240;
+                PortfolioContentGrid.RowDefinitions[1].Height = new GridLength(240);
+                return;
+            }
+
+            Grid.SetRow(PortfolioHoldingsCard, 0);
+            Grid.SetColumn(PortfolioHoldingsCard, 0);
+            Grid.SetColumnSpan(PortfolioHoldingsCard, 1);
+            PortfolioHoldingsCard.Margin = new Thickness(0, 0, 18, 0);
+
+            Grid.SetRow(PortfolioActivityCard, 0);
+            Grid.SetColumn(PortfolioActivityCard, 1);
+            Grid.SetColumnSpan(PortfolioActivityCard, 1);
+            PortfolioActivityCard.Margin = new Thickness(0);
+            PortfolioActivityCard.MaxHeight = double.PositiveInfinity;
+            PortfolioContentGrid.RowDefinitions[1].Height = GridLength.Auto;
+        }
+
+        private void ApplyPortfolioFormLayout(bool narrow)
+        {
+            if (narrow)
+            {
+                PortfolioTransactionFormGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+                PortfolioTransactionFormGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                PortfolioTransactionFormGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+                PortfolioTransactionFormGrid.ColumnDefinitions[3].Width = new GridLength(0);
+                PortfolioTransactionFormGrid.ColumnDefinitions[4].Width = new GridLength(0);
+                PortfolioTransactionFormGrid.ColumnDefinitions[5].Width = new GridLength(0);
+
+                Grid.SetRow(PortfolioAssetInput, 0);
+                Grid.SetColumn(PortfolioAssetInput, 0);
+                Grid.SetColumnSpan(PortfolioAssetInput, 2);
+                PortfolioAssetInput.Margin = new Thickness(0, 0, 12, 12);
+
+                Grid.SetRow(PortfolioExchangeInput, 0);
+                Grid.SetColumn(PortfolioExchangeInput, 2);
+                Grid.SetColumnSpan(PortfolioExchangeInput, 1);
+                PortfolioExchangeInput.Margin = new Thickness(0, 0, 0, 12);
+
+                Grid.SetRow(PortfolioAmountInput, 1);
+                Grid.SetColumn(PortfolioAmountInput, 0);
+                Grid.SetColumnSpan(PortfolioAmountInput, 1);
+                PortfolioAmountInput.Margin = new Thickness(0, 0, 12, 12);
+
+                Grid.SetRow(PortfolioPriceInput, 1);
+                Grid.SetColumn(PortfolioPriceInput, 1);
+                Grid.SetColumnSpan(PortfolioPriceInput, 1);
+                PortfolioPriceInput.Margin = new Thickness(0, 0, 12, 12);
+
+                Grid.SetRow(PortfolioFeeInput, 1);
+                Grid.SetColumn(PortfolioFeeInput, 2);
+                Grid.SetColumnSpan(PortfolioFeeInput, 1);
+                PortfolioFeeInput.Margin = new Thickness(0, 0, 0, 12);
+
+                Grid.SetRow(PortfolioAddAction, 2);
+                Grid.SetColumn(PortfolioAddAction, 0);
+                Grid.SetColumnSpan(PortfolioAddAction, 3);
+                PortfolioAddAction.Margin = new Thickness(0);
+                return;
+            }
+
+            PortfolioTransactionFormGrid.ColumnDefinitions[0].Width = new GridLength(2, GridUnitType.Star);
+            PortfolioTransactionFormGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+            PortfolioTransactionFormGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+            PortfolioTransactionFormGrid.ColumnDefinitions[3].Width = new GridLength(1, GridUnitType.Star);
+            PortfolioTransactionFormGrid.ColumnDefinitions[4].Width = new GridLength(1, GridUnitType.Star);
+            PortfolioTransactionFormGrid.ColumnDefinitions[5].Width = GridLength.Auto;
+
+            var inputs = new[]
+            {
+                PortfolioAssetInput,
+                PortfolioAmountInput,
+                PortfolioPriceInput,
+                PortfolioFeeInput,
+                PortfolioExchangeInput,
+                PortfolioAddAction
+            };
+
+            for (var i = 0; i < inputs.Length; i++)
+            {
+                Grid.SetRow(inputs[i], 0);
+                Grid.SetColumn(inputs[i], i);
+                Grid.SetColumnSpan(inputs[i], 1);
+                inputs[i].Margin = new Thickness(0, 0, i == inputs.Length - 1 ? 0 : 14, 0);
+            }
         }
     }
 }
