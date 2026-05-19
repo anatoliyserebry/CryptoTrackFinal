@@ -34,7 +34,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"top/mktcapfull?limit={limit}&tsym=USD");
-                var data = JsonConvert.DeserializeObject<CryptoCompareResponse>(json);
+                var data = JsonConvert.DeserializeObject<CryptoCompareResponse>(json) ?? new CryptoCompareResponse();
 
                 return data.Data.Select(d => new CryptoCurrency
                 {
@@ -60,7 +60,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"pricemultifull?fsyms={id.ToUpper()}&tsyms=USD");
-                var data = JsonConvert.DeserializeObject<CryptoComparePriceResponse>(json);
+                var data = JsonConvert.DeserializeObject<CryptoComparePriceResponse>(json) ?? new CryptoComparePriceResponse();
 
                 if (data.RAW.TryGetValue(id.ToUpper(), out var cryptoData) &&
                     cryptoData.TryGetValue("USD", out var priceData))
@@ -79,7 +79,7 @@ namespace CryptoTrackClient.Services.ApiClients
                     };
                 }
 
-                throw new ApiException(ApiName, $"Cryptocurrency {id} not found", null);
+                throw new ApiException(ApiName, $"Cryptocurrency {id} not found");
             }
             catch (Exception ex)
             {
@@ -97,7 +97,7 @@ namespace CryptoTrackClient.Services.ApiClients
 
                 var json = await GetStringWithRetryAsync(requestUri);
 
-                var data = JsonConvert.DeserializeObject<CryptoCompareHistoryResponse>(json);
+                var data = JsonConvert.DeserializeObject<CryptoCompareHistoryResponse>(json) ?? new CryptoCompareHistoryResponse();
 
                 return data.Data.Data
                     .Where(d => d.close > 0)
@@ -119,7 +119,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("v3/fiat/map");
-                var data = JsonConvert.DeserializeObject<CryptoCompareFiatResponse>(json);
+                var data = JsonConvert.DeserializeObject<CryptoCompareFiatResponse>(json) ?? new CryptoCompareFiatResponse();
 
                 var result = new List<FiatCurrency>();
                 foreach (var f in data.Data.Take(20))
@@ -150,7 +150,7 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync($"price?fsym={fromCurrency}&tsyms={toCurrency}");
                 var data = JsonConvert.DeserializeObject<Dictionary<string, decimal>>(json);
 
-                return data.TryGetValue(toCurrency, out var rate) ? rate : 1m;
+                return data != null && data.TryGetValue(toCurrency, out var rate) ? rate : 1m;
             }
             catch
             {
@@ -174,25 +174,25 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class CryptoCompareResponse
         {
-            public List<CryptoCompareData> Data { get; set; }
+            public List<CryptoCompareData> Data { get; set; } = new();
         }
 
         private class CryptoCompareData
         {
-            public CoinInfo CoinInfo { get; set; }
-            public RAW RAW { get; set; }
+            public CoinInfo CoinInfo { get; set; } = new();
+            public RAW? RAW { get; set; }
         }
 
         private class CoinInfo
         {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public string FullName { get; set; }
+            public string Id { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string FullName { get; set; } = string.Empty;
         }
 
         private class RAW
         {
-            public USD USD { get; set; }
+            public USD? USD { get; set; }
         }
 
         private class USD
@@ -207,17 +207,17 @@ namespace CryptoTrackClient.Services.ApiClients
 
         private class CryptoComparePriceResponse
         {
-            public Dictionary<string, Dictionary<string, USD>> RAW { get; set; }
+            public Dictionary<string, Dictionary<string, USD>> RAW { get; set; } = new();
         }
 
         private class CryptoCompareHistoryResponse
         {
-            public HistoryData Data { get; set; }
+            public HistoryData Data { get; set; } = new();
         }
 
         private class HistoryData
         {
-            public List<HistoryPoint> Data { get; set; }
+            public List<HistoryPoint> Data { get; set; } = new();
         }
 
         private class HistoryPoint
@@ -229,14 +229,14 @@ namespace CryptoTrackClient.Services.ApiClients
 
         private class CryptoCompareFiatResponse
         {
-            public List<FiatData> Data { get; set; }
+            public List<FiatData> Data { get; set; } = new();
         }
 
         private class FiatData
         {
-            public string Symbol { get; set; }
-            public string Name { get; set; }
-            public string Sign { get; set; }
+            public string Symbol { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string? Sign { get; set; }
         }
         #endregion
     }

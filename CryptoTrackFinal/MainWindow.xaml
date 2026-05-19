@@ -8,8 +8,8 @@
         Title="CryptoTrack"
         Height="860"
         Width="1380"
-        MinHeight="720"
-        MinWidth="1080"
+        MinHeight="640"
+        MinWidth="900"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBackgroundBrush}">
     <Grid>
@@ -21,7 +21,9 @@
             </LinearGradientBrush>
         </Grid.Background>
 
-        <Border Margin="20" Style="{StaticResource ShellFrameStyle}">
+        <Border x:Name="ShellFrame"
+                Margin="20"
+                Style="{StaticResource ShellFrameStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -29,7 +31,8 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0"
+                <Border x:Name="HeroPanel"
+                        Grid.Row="0"
                         Background="{StaticResource HeroBrush}"
                         CornerRadius="28"
                         Padding="28"
@@ -49,7 +52,8 @@
                             <StackPanel>
                                 <TextBlock Text="CryptoTrack"
                                            Style="{StaticResource HeroTitleTextStyle}"/>
-                                <TextBlock Text="A cleaner dashboard to watch the market, track your portfolio and convert currencies in one place."
+                                <TextBlock x:Name="HeroSubtitle"
+                                           Text="A cleaner dashboard to watch the market, track your portfolio and convert currencies in one place."
                                            Style="{StaticResource HeroSubtitleTextStyle}"
                                            Margin="0,8,0,0"
                                            Width="560"/>
@@ -134,7 +138,8 @@
                                 </Button>
                             </StackPanel>
 
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="HeroStatus"
+                                       Grid.Column="1"
                                        Text="{Binding StatusMessage}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
@@ -143,7 +148,8 @@
                                        TextTrimming="CharacterEllipsis"
                                        Margin="24,0"/>
 
-                            <UniformGrid Grid.Column="2"
+                            <UniformGrid x:Name="HeroMetricsPanel"
+                                         Grid.Column="2"
                                          Columns="3"
                                          Rows="1">
                                 <Border Style="{StaticResource HeroMetricCardStyle}"
@@ -199,24 +205,36 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <Grid Margin="0,0,0,18">
+                            <Grid x:Name="MarketSummaryGrid"
+                                  Margin="0,0,0,18">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="2.2*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0"
+                                <Border x:Name="MarketFiltersCard"
+                                        Grid.Column="0"
                                         Style="{StaticResource PanelCardStyle}"
                                         Margin="0,0,18,0">
-                                    <Grid>
+                                    <Grid x:Name="MarketFiltersLayout">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="2*"/>
                                             <ColumnDefinition Width="1.1*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                                        <StackPanel x:Name="MarketSearchPanel"
+                                                    Grid.Column="0"
+                                                    Margin="0,0,18,0">
                                             <TextBlock Text="Search the market"
                                                        Style="{StaticResource LabelTextStyle}"/>
                                             <Border BorderBrush="{StaticResource BorderBrush}"
@@ -329,7 +347,9 @@
                                             </Border>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="1" Margin="0,0,18,0">
+                                        <StackPanel x:Name="MarketSourcePanel"
+                                                    Grid.Column="1"
+                                                    Margin="0,0,18,0">
                                             <TextBlock Text="Market source"
                                                        Style="{StaticResource LabelTextStyle}"/>
                                             <ComboBox ItemsSource="{Binding AvailableApis}"
@@ -337,7 +357,8 @@
                                                       Style="{StaticResource ModernComboBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="2"
+                                        <StackPanel x:Name="MarketApplyPanel"
+                                                    Grid.Column="2"
                                                     VerticalAlignment="Bottom">
                                             <Button Command="{Binding SwitchApiCommand}">
                                                 <Button.Style>
@@ -356,7 +377,8 @@
                                     </Grid>
                                 </Border>
 
-                                <Border Grid.Column="1"
+                                <Border x:Name="MarketDisplayedCard"
+                                        Grid.Column="1"
                                         Style="{StaticResource PanelCardStyle}"
                                         Margin="0,0,18,0">
                                     <StackPanel>
@@ -371,7 +393,8 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Grid.Column="2"
+                                <Border x:Name="MarketFavoritesCard"
+                                        Grid.Column="2"
                                         Style="{StaticResource PanelCardSoftStyle}">
                                     <StackPanel>
                                         <TextBlock Text="Favorites tracked"
@@ -442,6 +465,11 @@
                                                     </Style>
                                                 </Button.Style>
                                             </Button>
+
+                                            <Button Content="{Binding MarketDataSizeButtonText}"
+                                                    Command="{Binding ToggleMarketDataSizeCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Margin="12,0,0,0"/>
                                         </StackPanel>
                                     </Grid>
 
@@ -590,7 +618,8 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <UniformGrid Columns="3"
+                            <UniformGrid x:Name="PortfolioSummaryGrid"
+                                         Columns="3"
                                          Rows="1"
                                          Margin="0,0,0,18">
                                 <Border Style="{StaticResource PanelCardStyle}"
@@ -637,7 +666,8 @@
                                 </Border>
                             </UniformGrid>
 
-                            <Border Grid.Row="1"
+                            <Border x:Name="PortfolioTransactionCard"
+                                    Grid.Row="1"
                                     Style="{StaticResource PanelCardStyle}"
                                     Margin="0,0,0,18">
                                 <Grid>
@@ -654,7 +684,14 @@
                                                    Margin="0,6,0,0"/>
                                     </StackPanel>
 
-                                    <Grid Grid.Row="1" Margin="0,20,0,0">
+                                    <Grid x:Name="PortfolioTransactionFormGrid"
+                                          Grid.Row="1"
+                                          Margin="0,20,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="2*"/>
                                             <ColumnDefinition Width="*"/>
@@ -664,7 +701,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                        <StackPanel x:Name="PortfolioAssetInput"
+                                                    Grid.Column="0"
+                                                    Margin="0,0,14,0">
                                             <TextBlock Text="Asset" Style="{StaticResource LabelTextStyle}"/>
                                             <ComboBox ItemsSource="{Binding Cryptocurrencies}"
                                                       SelectedItem="{Binding SelectedPortfolioCurrency}"
@@ -672,31 +711,40 @@
                                                       Style="{StaticResource ModernComboBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                        <StackPanel x:Name="PortfolioAmountInput"
+                                                    Grid.Column="1"
+                                                    Margin="0,0,14,0">
                                             <TextBlock Text="Amount" Style="{StaticResource LabelTextStyle}"/>
                                             <TextBox Text="{Binding PortfolioTransactionAmount, UpdateSourceTrigger=PropertyChanged}"
                                                      Style="{StaticResource ModernTextBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="2" Margin="0,0,14,0">
+                                        <StackPanel x:Name="PortfolioPriceInput"
+                                                    Grid.Column="2"
+                                                    Margin="0,0,14,0">
                                             <TextBlock Text="Buy price" Style="{StaticResource LabelTextStyle}"/>
                                             <TextBox Text="{Binding PortfolioTransactionPrice, UpdateSourceTrigger=PropertyChanged}"
                                                      Style="{StaticResource ModernTextBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="3" Margin="0,0,14,0">
+                                        <StackPanel x:Name="PortfolioFeeInput"
+                                                    Grid.Column="3"
+                                                    Margin="0,0,14,0">
                                             <TextBlock Text="Fee" Style="{StaticResource LabelTextStyle}"/>
                                             <TextBox Text="{Binding PortfolioTransactionFee, UpdateSourceTrigger=PropertyChanged}"
                                                      Style="{StaticResource ModernTextBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="4" Margin="0,0,14,0">
+                                        <StackPanel x:Name="PortfolioExchangeInput"
+                                                    Grid.Column="4"
+                                                    Margin="0,0,14,0">
                                             <TextBlock Text="Exchange" Style="{StaticResource LabelTextStyle}"/>
                                             <TextBox Text="{Binding PortfolioTransactionExchange, UpdateSourceTrigger=PropertyChanged}"
                                                      Style="{StaticResource ModernTextBoxStyle}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="5"
+                                        <StackPanel x:Name="PortfolioAddAction"
+                                                    Grid.Column="5"
                                                     VerticalAlignment="Bottom">
                                             <Button Content="Add transaction"
                                                     Command="{Binding AddPortfolioTransactionCommand}"
@@ -706,13 +754,19 @@
                                 </Grid>
                             </Border>
 
-                            <Grid Grid.Row="2">
+                            <Grid x:Name="PortfolioContentGrid"
+                                  Grid.Row="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="2.1*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0"
+                                <Border x:Name="PortfolioHoldingsCard"
+                                        Grid.Column="0"
                                         Style="{StaticResource PanelCardStyle}"
                                         Padding="0"
                                         Margin="0,0,18,0">
@@ -722,13 +776,27 @@
                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
 
-                                        <StackPanel Margin="24,24,24,16">
-                                            <TextBlock Text="Holdings"
-                                                       Style="{StaticResource SectionTitleTextStyle}"/>
-                                            <TextBlock Text="Each row combines your buy history with the latest market price."
-                                                       Style="{StaticResource SectionSubtitleTextStyle}"
-                                                       Margin="0,6,0,0"/>
-                                        </StackPanel>
+                                        <Grid Margin="24,24,24,16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel>
+                                                <TextBlock Text="Holdings"
+                                                           Style="{StaticResource SectionTitleTextStyle}"/>
+                                                <TextBlock Text="Each row combines your buy history with the latest market price."
+                                                           Style="{StaticResource SectionSubtitleTextStyle}"
+                                                           Margin="0,6,0,0"/>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1"
+                                                    Content="{Binding PortfolioDataSizeButtonText}"
+                                                    Command="{Binding TogglePortfolioDataSizeCommand}"
+                                                    Style="{StaticResource SurfaceButtonStyle}"
+                                                    Margin="18,0,0,0"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
 
                                         <DataGrid Grid.Row="1"
                                                   ItemsSource="{Binding PortfolioAssets}"
@@ -782,7 +850,8 @@
                                     </Grid>
                                 </Border>
 
-                                <Border Grid.Column="1"
+                                <Border x:Name="PortfolioActivityCard"
+                                        Grid.Column="1"
                                         Style="{StaticResource PanelCardSoftStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -1154,23 +1223,35 @@
                                                 </Style>
                                             </Button.Style>
                                         </Button>
+
+                                        <Button Content="{Binding ChartSizeButtonText}"
+                                                Command="{Binding ToggleChartSizeCommand}"
+                                                Style="{StaticResource SurfaceButtonStyle}"
+                                                Margin="12,0,0,0"/>
                                     </StackPanel>
                                 </Grid>
 
-                                <Grid Grid.Row="2">
+                                <Grid x:Name="ChartContentGrid"
+                                      Grid.Row="2">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2.1*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Border Grid.Column="0"
+                                    <Border x:Name="ChartPlotCard"
+                                            Grid.Column="0"
                                             Style="{StaticResource PanelCardStyle}"
                                             Margin="0,0,18,0">
                                         <oxy:PlotView Model="{Binding PriceChartModel}"
                                                       Background="Transparent"/>
                                     </Border>
 
-                                    <Border Grid.Column="1"
+                                    <Border x:Name="ChartHistoryCard"
+                                            Grid.Column="1"
                                             Style="{StaticResource PanelCardSoftStyle}"
                                             Padding="0">
                                         <Grid>
@@ -1210,7 +1291,8 @@
                     </Border>
                 </Grid>
 
-                <Border Grid.Row="2"
+                <Border x:Name="FooterBar"
+                        Grid.Row="2"
                         Background="#F7FAFD"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="1"

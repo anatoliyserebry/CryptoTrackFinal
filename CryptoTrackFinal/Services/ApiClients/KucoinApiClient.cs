@@ -25,7 +25,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("market/allTickers");
-                var data = JsonConvert.DeserializeObject<KucoinTickersResponse>(json);
+                var data = JsonConvert.DeserializeObject<KucoinTickersResponse>(json) ?? new KucoinTickersResponse();
 
                 // Filter USDT pairs and take top by volume
                 var usdtPairs = data.data.ticker
@@ -58,11 +58,13 @@ namespace CryptoTrackClient.Services.ApiClients
             {
                 var symbol = $"{id.ToUpper()}-USDT";
                 var json = await GetStringWithRetryAsync($"market/orderbook/level1?symbol={symbol}");
-                var data = JsonConvert.DeserializeObject<KucoinTickerResponse>(json);
+                var data = JsonConvert.DeserializeObject<KucoinTickerResponse>(json)
+                    ?? throw new ApiException(ApiName, $"No KuCoin ticker data returned for {id}");
 
                 // Get 24h stats
                 var statsJson = await GetStringWithRetryAsync($"market/stats?symbol={symbol}");
-                var stats = JsonConvert.DeserializeObject<KucoinStatsResponse>(statsJson);
+                var stats = JsonConvert.DeserializeObject<KucoinStatsResponse>(statsJson)
+                    ?? throw new ApiException(ApiName, $"No KuCoin stats returned for {id}");
 
                 return new CryptoCurrency
                 {
@@ -94,7 +96,7 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"market/candles?type={type}&symbol={symbol}&startAt={start}&endAt={end}");
 
-                var data = JsonConvert.DeserializeObject<KucoinCandlesResponse>(json);
+                var data = JsonConvert.DeserializeObject<KucoinCandlesResponse>(json) ?? new KucoinCandlesResponse();
 
                 return data.data.Select(c => new PriceHistory(
                     DateTimeOffset.FromUnixTimeSeconds(long.Parse(c[0])).DateTime,
@@ -134,48 +136,48 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class KucoinTickersResponse
         {
-            public KucoinTickersData data { get; set; }
+            public KucoinTickersData data { get; set; } = new();
         }
 
         private class KucoinTickersData
         {
-            public List<KucoinTicker> ticker { get; set; }
+            public List<KucoinTicker> ticker { get; set; } = new();
         }
 
         private class KucoinTicker
         {
-            public string symbol { get; set; }
-            public string last { get; set; }
-            public string changePrice { get; set; }
-            public string changeRate { get; set; }
-            public string volValue { get; set; }
+            public string symbol { get; set; } = string.Empty;
+            public string last { get; set; } = "0";
+            public string changePrice { get; set; } = "0";
+            public string changeRate { get; set; } = "0";
+            public string volValue { get; set; } = "0";
         }
 
         private class KucoinTickerResponse
         {
-            public KucoinTickerData data { get; set; }
+            public KucoinTickerData data { get; set; } = new();
         }
 
         private class KucoinTickerData
         {
-            public string price { get; set; }
+            public string price { get; set; } = "0";
         }
 
         private class KucoinStatsResponse
         {
-            public KucoinStatsData data { get; set; }
+            public KucoinStatsData data { get; set; } = new();
         }
 
         private class KucoinStatsData
         {
-            public string changePrice { get; set; }
-            public string changeRate { get; set; }
-            public string volValue { get; set; }
+            public string changePrice { get; set; } = "0";
+            public string changeRate { get; set; } = "0";
+            public string volValue { get; set; } = "0";
         }
 
         private class KucoinCandlesResponse
         {
-            public List<List<string>> data { get; set; }
+            public List<List<string>> data { get; set; } = new();
         }
         #endregion
     }

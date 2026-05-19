@@ -59,7 +59,8 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync($"coins/{id}");
-                var data = JsonConvert.DeserializeObject<CoinGeckoCoinDetail>(json);
+                var data = JsonConvert.DeserializeObject<CoinGeckoCoinDetail>(json)
+                    ?? throw new ApiException(ApiName, $"No CoinGecko data returned for {id}");
 
                 return new CryptoCurrency
                 {
@@ -89,7 +90,7 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync(
                     $"coins/{cryptoId}/market_chart?vs_currency=usd&days={days}");
 
-                var data = JsonConvert.DeserializeObject<CoinGeckoMarketChart>(json);
+                var data = JsonConvert.DeserializeObject<CoinGeckoMarketChart>(json) ?? new CoinGeckoMarketChart();
 
                 return data.prices.Select(p => new PriceHistory(
                     DateTimeOffset.FromUnixTimeMilliseconds((long)p[0]).DateTime,
@@ -108,7 +109,7 @@ namespace CryptoTrackClient.Services.ApiClients
             try
             {
                 var json = await GetStringWithRetryAsync("simple/supported_vs_currencies");
-                var currencies = JsonConvert.DeserializeObject<List<string>>(json);
+                var currencies = JsonConvert.DeserializeObject<List<string>>(json) ?? new List<string>();
 
                 var fiatCurrencies = new List<string> { "usd", "eur", "gbp", "jpy", "rub", "cny", "inr", "aud", "cad", "chf" };
                 var result = new List<FiatCurrency>();
@@ -146,7 +147,7 @@ namespace CryptoTrackClient.Services.ApiClients
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, decimal>>>(json);
 
-                if (data.TryGetValue("bitcoin", out var rates) && rates.TryGetValue(toCurrency.ToLower(), out var rate))
+                if (data != null && data.TryGetValue("bitcoin", out var rates) && rates.TryGetValue(toCurrency.ToLower(), out var rate))
                 {
                     // Convert via BTC
                     var btcToFrom = await GetBtcRate(fromCurrency);
@@ -183,7 +184,11 @@ namespace CryptoTrackClient.Services.ApiClients
                 var json = await GetStringWithRetryAsync($"simple/price?ids=bitcoin&vs_currencies={currency}");
                 var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, decimal>>>(json);
 
-                return data?["bitcoin"]?[currency.ToLower()] ?? 1m;
+                return data != null
+                       && data.TryGetValue("bitcoin", out var rates)
+                       && rates.TryGetValue(currency.ToLower(), out var rate)
+                    ? rate
+                    : 1m;
             }
             catch
             {
@@ -235,9 +240,9 @@ namespace CryptoTrackClient.Services.ApiClients
         #region JSON Classes
         private class CoinGeckoMarketData
         {
-            public string id { get; set; }
-            public string symbol { get; set; }
-            public string name { get; set; }
+            public string id { get; set; } = string.Empty;
+            public string symbol { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
             public decimal current_price { get; set; }
             public decimal market_cap { get; set; }
             public int market_cap_rank { get; set; }
@@ -245,32 +250,32 @@ namespace CryptoTrackClient.Services.ApiClients
             public decimal price_change_percentage_24h { get; set; }
             public decimal total_volume { get; set; }
             public decimal? circulating_supply { get; set; }
-            public string last_updated { get; set; }
+            public string last_updated { get; set; } = string.Empty;
         }
 
         private class CoinGeckoCoinDetail
         {
-            public string id { get; set; }
-            public string symbol { get; set; }
-            public string name { get; set; }
-            public CoinGeckoMarketDataDetail market_data { get; set; }
+            public string id { get; set; } = string.Empty;
+            public string symbol { get; set; } = string.Empty;
+            public string name { get; set; } = string.Empty;
+            public CoinGeckoMarketDataDetail market_data { get; set; } = new();
         }
 
         private class CoinGeckoMarketDataDetail
         {
-            public Dictionary<string, decimal> current_price { get; set; }
-            public Dictionary<string, decimal> market_cap { get; set; }
+            public Dictionary<string, decimal> current_price { get; set; } = new();
+            public Dictionary<string, decimal> market_cap { get; set; } = new();
             public decimal price_change_24h { get; set; }
             public decimal price_change_percentage_24h { get; set; }
-            public Dictionary<string, decimal> total_volume { get; set; }
+            public Dictionary<string, decimal> total_volume { get; set; } = new();
             public decimal? circulating_supply { get; set; }
             public decimal? total_supply { get; set; }
         }
 
         private class CoinGeckoMarketChart
         {
-            public List<List<decimal>> prices { get; set; }
-            public List<List<decimal>> total_volumes { get; set; }
+            public List<List<decimal>> prices { get; set; } = new();
+            public List<List<decimal>> total_volumes { get; set; } = new();
         }
         #endregion
     }
@@ -279,7 +284,13 @@ namespace CryptoTrackClient.Services.ApiClients
     {
         public string ApiName { get; }
 
-        public ApiException(string apiName, string message, Exception innerException)
+        public ApiException(string apiName, string message)
+            : base($"{apiName}: {message}")
+        {
+            ApiName = apiName;
+        }
+
+        public ApiException(string apiName, string message, Exception? innerException)
             : base($"{apiName}: {message}", innerException)
         {
             ApiName = apiName;
