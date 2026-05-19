@@ -23,7 +23,7 @@ namespace CryptoTrackClient.Services.ApiClients
             _symbolMapping = new Dictionary<string, string>
             {
                 { "bitcoin", "BTCUSDT" },
-                { "ethereum", "ETHUSDT" },
+                { "ethereum", "ETHUSDT" }, 
                 { "binancecoin", "BNBUSDT" },
                 { "ripple", "XRPUSDT" },
                 { "cardano", "ADAUSDT" },

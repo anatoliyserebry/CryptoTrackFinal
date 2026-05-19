@@ -59,7 +59,7 @@
                                         Orientation="Horizontal"
                                         VerticalAlignment="Top">
                                 <Border Style="{StaticResource PillBorderStyle}"
-                                        Margin="0,0,12,0">
+                                        Margin="0,0,12,0" Width="132" Height="34">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Feed"
                                                    Foreground="#D7E6F4"
